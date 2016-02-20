@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 /**
  * Specify the maximum number of characters accepted by the command string
@@ -52,5 +53,10 @@ void terminate();
  *  @return True if able to fill #command_t.cmdstr and false otherwise
  */
 bool get_command(command_t* cmd, FILE* in);
+
+//GET Command
+void change_directory(const char* path);
+
+
 
 #endif // QUASH_H

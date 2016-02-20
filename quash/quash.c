@@ -6,7 +6,7 @@
 
 /**************************************************************************
  * Included Files
- **************************************************************************/ 
+ **************************************************************************/
 #include "quash.h" // Putting this above the other includes allows us to ensure
                    // this file's headder's #include statements are self
                    // contained.
@@ -23,9 +23,10 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
+static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
- * Private Functions 
+ * Private Functions
  **************************************************************************/
 /**
  * Start the main loop by setting the running flag to true
@@ -35,7 +36,7 @@ static void start() {
 }
 
 /**************************************************************************
- * Public Functions 
+ * Public Functions
  **************************************************************************/
 bool is_running() {
   return running;
@@ -57,11 +58,19 @@ bool get_command(command_t* cmd, FILE* in) {
     }
     else
       cmd->cmdlen = len;
-    
+
     return true;
   }
   else
     return false;
+}
+
+/**
+* CHANGE_DIRECTORY will invoke the chdir() UNIX system call to
+* change the working directory to that specified in path.
+*/
+void change_directory(const char* path) {
+
 }
 
 /**
@@ -71,11 +80,11 @@ bool get_command(command_t* cmd, FILE* in) {
  * @param argv argument vector from the command line
  * @return program exit status
  */
-int main(int argc, char** argv) { 
+int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-  
+
   start();
-  
+
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
 
@@ -85,9 +94,9 @@ int main(int argc, char** argv) {
     // this while loop. It is just an example.
 
     // The commands should be parsed, then executed.
-    if (!strcmp(cmd.cmdstr, "exit"))
+    if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit"))
       terminate(); // Exit Quash
-    else 
+    else
       puts(cmd.cmdstr); // Echo the input string
   }
 
