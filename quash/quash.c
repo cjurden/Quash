@@ -6,13 +6,13 @@
 
 /**************************************************************************
  * Included Files
- **************************************************************************/ 
+ **************************************************************************/
 #include "quash.h" // Putting this above the other includes allows us to ensure
                    // this file's headder's #include statements are self
                    // contained.
 
 #include <string.h>
-
+#define MAX_BUFFER 1024
 /**************************************************************************
  * Private Variables
  **************************************************************************/
@@ -25,7 +25,7 @@
 static bool running;
 
 /**************************************************************************
- * Private Functions 
+ * Private Functions
  **************************************************************************/
 /**
  * Start the main loop by setting the running flag to true
@@ -35,7 +35,7 @@ static void start() {
 }
 
 /**************************************************************************
- * Public Functions 
+ * Public Functions
  **************************************************************************/
 bool is_running() {
   return running;
@@ -57,13 +57,34 @@ bool get_command(command_t* cmd, FILE* in) {
     }
     else
       cmd->cmdlen = len;
-    
+
     return true;
   }
   else
     return false;
 }
 
+void read_command(command_t* cmd, char** argc){
+  char* cstring = strtok(cmd->cmdstr, " ");
+
+  //read cstring, break it up and go through each until you reach null.
+  while(cstring != NULL){
+    g_array_append_val(argc, cstring);
+    cstring = strtok(NULL, " ");
+  }
+}
+
+void exec_command(char** argc){
+  //search global variable containing execs
+
+  //if not there, check path
+
+}
+
+bool in_cmd_set(char* input)
+{
+
+}
 /**
  * Quash entry point
  *
@@ -71,11 +92,12 @@ bool get_command(command_t* cmd, FILE* in) {
  * @param argv argument vector from the command line
  * @return program exit status
  */
-int main(int argc, char** argv) { 
+int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-  
+  char cmdbuf[MAX_BUFFER]; //< array holding individual commands
+
   start();
-  
+
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
 
@@ -87,7 +109,7 @@ int main(int argc, char** argv) {
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit"))
       terminate(); // Exit Quash
-    else 
+    else
       puts(cmd.cmdstr); // Echo the input string
   }
 
