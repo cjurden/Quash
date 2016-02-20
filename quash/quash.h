@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <errno.h>
 
 /**
  * Specify the maximum number of characters accepted by the command string
@@ -56,6 +57,9 @@ bool get_command(command_t* cmd, FILE* in);
 
 //GET Command
 void change_directory(const char* path);
+
+//Print Working Directory Command
+void print_working_directory();
 
 
 
