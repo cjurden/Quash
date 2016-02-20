@@ -103,10 +103,8 @@ void change_directory(const char* path) {
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-<<<<<<< HEAD
   char cmdbuf[MAX_BUFFER]; //< array holding individual commands
-=======
->>>>>>> master
+
 
   start();
 
