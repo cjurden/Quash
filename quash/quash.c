@@ -13,6 +13,7 @@
 
 #include <string.h>
 #define MAX_BUFFER 1024
+#define VALID_COMMAND_LENGTH 7
 /**************************************************************************
  * Private Variables
  **************************************************************************/
@@ -65,21 +66,74 @@ bool get_command(command_t* cmd, FILE* in) {
     return false;
 }
 
-void read_command(command_t* cmd, char** argc){
+//returns number of commands
+int read_command(command_t* cmd, char** cmdbuf){
   char* cstring = strtok(cmd->cmdstr, " ");
-
+  int len = 0;
   //read cstring, break it up and go through each until you reach null.
   while(cstring != NULL){
-    g_array_append_val(argc, cstring);
+    cmdbuf[len] = cstring;
+    if(cstring == "|"){
+      //PIPE_FLAG = 1;
+    }
     cstring = strtok(NULL, " ");
+    len++;
   }
+  return len;
 }
 
-void exec_command(char** argc){
+void exec_command(char** cmdbuf, int len){
   //search global variable containing execs
+  bool p = check_for_pipe(cmdbuf);
+  if(p != -1){
+    int i = 0;
+    while(cmdbuf[i] != "|"){
+        argc
+    }
+    }
+  } else {
+    for(int i = 0; i < len; i++){
+        if(cmdbuf[i] == "set"){
+
+        }else if(cmdbuf[i] == "echo"){
+
+        }else if(cmdbuf[i] == "cd"){
+
+        }else if(cmdbuf[i] == "pwd"){
+
+        }else if(cmdbuf[i] == "quit"){
+
+        }else if(cmdbuf[i] == "exit"){
+
+        }else if(cmdbuf[i] == "jobs"){
+
+        }else if(cmdbuf[i] == ""){
+
+        }
+      }
+    }
+  }
 
   //if not there, check path
 
+}
+
+void store_commands_before_pipe(char** cmdbuf, int piploc){
+  for(int i = 0; i < piploc-1; i++)
+}
+
+void exec_command_with_pipe {
+
+}
+
+//see if pipes are in command line
+int check_for_pipe(char** cmdbuf){
+  for(int i = 0; i < 100; i++){
+    if(cmdbuf[i] == "|"){
+      return i;
+    }
+  }
+  return -1;
 }
 
 bool in_cmd_set(char* input)
@@ -104,7 +158,9 @@ void change_directory(const char* path) {
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
   char cmdbuf[MAX_BUFFER]; //< array holding individual commands
-
+  for(int i = 0; i < 100; i++){
+    cmdbuf[i] = NULL;
+  }
 
   start();
 
