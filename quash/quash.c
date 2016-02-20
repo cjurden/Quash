@@ -86,11 +86,34 @@ bool in_cmd_set(char* input)
 {
 
 }
+
 /**
 * CHANGE_DIRECTORY will invoke the chdir() UNIX system call to
 * change the working directory to that specified in path.
 */
 void change_directory(const char* path) {
+  int status = chdir(path);
+  if(status < 0) {
+    puts("Error. Invalid directory");
+  }
+  else {
+    puts("Successfully changed to");
+    puts(path);
+  }
+}
+
+/**
+* Print Working Directory (PWD) will invoke the getcwd() UNIX system
+* call to print the current working directory to terminal
+*/
+void print_working_directory() {
+  char cwd[MAX_BUFFER];
+  if(getcwd(cwd, sizeof(cwd)) != NULL){
+    fprintf(stdout, "Current Working Directory: %s\n", cwd);
+  }
+  else {
+    perror("getcwd() error");
+  }
 
 }
 
@@ -103,10 +126,7 @@ void change_directory(const char* path) {
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-<<<<<<< HEAD
   char cmdbuf[MAX_BUFFER]; //< array holding individual commands
-=======
->>>>>>> master
 
   start();
 
