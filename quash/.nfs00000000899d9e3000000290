@@ -23,7 +23,6 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
-static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
  * Private Functions
@@ -87,14 +86,6 @@ bool in_cmd_set(char* input)
 
 }
 /**
-* CHANGE_DIRECTORY will invoke the chdir() UNIX system call to
-* change the working directory to that specified in path.
-*/
-void change_directory(const char* path) {
-
-}
-
-/**
  * Quash entry point
  *
  * @param argc argument count from the command line
@@ -103,10 +94,7 @@ void change_directory(const char* path) {
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-<<<<<<< HEAD
   char cmdbuf[MAX_BUFFER]; //< array holding individual commands
-=======
->>>>>>> master
 
   start();
 
@@ -119,7 +107,7 @@ int main(int argc, char** argv) {
     // this while loop. It is just an example.
 
     // The commands should be parsed, then executed.
-    if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit"))
+    if (!strcmp(cmd.cmdstr, "exit"))
       terminate(); // Exit Quash
     else
       puts(cmd.cmdstr); // Echo the input string
