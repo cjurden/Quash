@@ -84,12 +84,24 @@ int read_command(command_t* cmd, char** cmdbuf){
 
 void exec_command(char** cmdbuf, int len){
   //search global variable containing execs
-  bool p = check_for_pipe(cmdbuf);
+  char** args[2][100];
+  int p = check_for_pipe(cmdbuf);
   if(p != -1){
-    int i = 0;
-    while(cmdbuf[i] != "|"){
-        //argc
+    for(int i = 0; i < p; i++)
+    {
+      args[0][i] = cmdbuf[i];
     }
+    for(int i = p+1; i < 100; i++)
+    {
+      int j = 0;
+      int backlen;
+      if(cmdbuf[i] != NULL)
+      {
+        args[1][j] = cmdbuf[i];
+        j++;
+      }
+    }
+    exec_command_with_pipe(args);
   }
   else {
     for(int i = 0; i < len; i++){
@@ -115,15 +127,37 @@ void exec_command(char** cmdbuf, int len){
 
       //if not there, check path
   }//end exec_command
-
+/*
 void store_commands_before_pipe(char** cmdbuf, int piploc){
   for(int i = 0; i < piploc-1; i++){
 
-  }
+  }*/
 }//end store_commands_before_pipe
 
-void exec_command_with_pipe() {
+//passed 2D array with commands before and after pipe
+//for more than one pipe, add parameter for # of pipes (same as # of rows in array)
+void exec_command_with_pipe(char*** argbuf) {
+  //create pipe structure
+  int fd_1[2];
+  int fd_2[2];
 
+  if (pipe(fd_1) == -1)
+  {
+    perror("pipe");
+	  exit(EXIT_FAILURE);
+  } else {
+    //might need to declare this above...
+    pid_1 = fork();
+    if(pid_1 == -1)
+    {
+      perror("fork");
+      exit(EXIT_FAILURE);
+    } else {
+      char cmdbuf[BSIZE];
+      bzero(cmdbuf, BSIZE);
+      sprint()
+    }
+  }
 }//end exec_command_with_pipe
 
 //see if pipes are in command line
