@@ -1,0 +1,2 @@
+Quash should support (at least) two built-in variables: PATH and HOME.
+-Do we actually declare these variables within our quash.c and quash.h files, or does it mean we'll be manipulating the actual environmental variables through system calls?
