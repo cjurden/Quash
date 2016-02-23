@@ -84,14 +84,26 @@ int read_command(command_t* cmd, char** cmdbuf){
 
 void exec_command(char** cmdbuf, int len){
   //search global variable containing execs
-  bool p = check_for_pipe(cmdbuf);
+  char** args[2][100];
+  int p = check_for_pipe(cmdbuf);
   if(p != -1){
-    int i = 0;
-    while(cmdbuf[i] != "|"){
-        argc
+    for(int i = 0; i < p; i++)
+    {
+      args[0][i] = cmdbuf[i];
     }
+    for(int i = p+1; i < 100; i++)
+    {
+      int j = 0;
+      int backlen;
+      if(cmdbuf[i] != NULL)
+      {
+        args[1][j] = cmdbuf[i];
+        j++;
+      }
     }
-  } else {
+    exec_command_with_pipe(args);
+  }
+  else {
     for(int i = 0; i < len; i++){
         if(cmdbuf[i] == "set"){
 
@@ -112,19 +124,41 @@ void exec_command(char** cmdbuf, int len){
         }
       }
     }
-  }
 
-  //if not there, check path
-
-}
-
+      //if not there, check path
+  }//end exec_command
+/*
 void store_commands_before_pipe(char** cmdbuf, int piploc){
-  for(int i = 0; i < piploc-1; i++)
-}
+  for(int i = 0; i < piploc-1; i++){
 
-void exec_command_with_pipe {
+  }*/
+}//end store_commands_before_pipe
 
-}
+//passed 2D array with commands before and after pipe
+//for more than one pipe, add parameter for # of pipes (same as # of rows in array)
+void exec_command_with_pipe(char*** argbuf) {
+  //create pipe structure
+  int fd_1[2];
+  int fd_2[2];
+
+  if (pipe(fd_1) == -1)
+  {
+    perror("pipe");
+	  exit(EXIT_FAILURE);
+  } else {
+    //might need to declare this above...
+    pid_1 = fork();
+    if(pid_1 == -1)
+    {
+      perror("fork");
+      exit(EXIT_FAILURE);
+    } else {
+      char cmdbuf[BSIZE];
+      bzero(cmdbuf, BSIZE);
+      sprint()
+    }
+  }
+}//end exec_command_with_pipe
 
 //see if pipes are in command line
 int check_for_pipe(char** cmdbuf){
@@ -134,19 +168,42 @@ int check_for_pipe(char** cmdbuf){
     }
   }
   return -1;
-}
+}//end check_for_pipe
 
 bool in_cmd_set(char* input)
 {
 
 }
-/**
-* CHANGE_DIRECTORY will invoke the chdir() UNIX system call to
-* change the working directory to that specified in path.
-*/
-void change_directory(const char* path) {
 
-}
+//-------------EXECUTION METHODS ------------------//
+void change_directory(const char* path) {
+  if(chdir(path) < 0){
+    puts("Error. Invalid directory.");
+  }
+  else{
+    puts("Successfully changed to");
+    puts(path);
+  }
+}//end change_directory
+
+void print_working_directory(){
+  char cwd[MAX_BUFFER];
+  if(getcwd(cwd, sizeof(cwd)) != NULL){
+    fprintf(stdout, "Current working directory: %s\n", cwd);
+  }
+  else{
+    perror("getcwd() error");
+  }
+}//end print_working_directory
+
+void echo(const char* path_to_echo){
+
+}//end echo
+
+void print_background_processes(){
+  //need to implement
+
+}//end print_background_processes
 
 /**
  * Quash entry point

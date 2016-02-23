@@ -32,6 +32,12 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
+
+/**
+ * Starts the main loop by setting running flag to true.
+ */
+static void start();
+
 /**
  * Query if quash should accept more input or not.
  *
@@ -55,11 +61,43 @@ void terminate();
  */
 bool get_command(command_t* cmd, FILE* in);
 
-//GET Command
+int read_command(command_t* cmd, char** cmdbuf);
+void exec_command(char** cmdbuf, int len);
+void store_commands_before_pipe(char** cmdbuf, int piploc);
+void exec_command_with_pipe();
+int check_for_pipe(char** cmdbuf);
+bool in_cmd_set(char* input);
+
+/**
+ * Change the working directory to the path specified.
+ * Uses the UNIX cwd() command.
+ * @param path - a string indicating the desired path.
+ */
 void change_directory(const char* path);
 
-//Print Working Directory Command
+/**
+ * Print the working directory to the terminal.
+ * Uses the UNIX pwd() command. No params, no return.
+ */
 void print_working_directory();
+
+ /**
+  * Print the content of the PATH and HOME environment variables to
+  * the terminal.
+  * Uses the UNIX pwd() command. No params, no return.
+  */
+void echo(const char* path_to_echo);
+
+/**
+ * Print all of the crrently running background processess in the format:
+ * [JOBID] PID COMMAND, where JOBID is the unique positive integer quash
+ * assigns to a job to identify it, PID is the PID of the child process
+ * used for the job and COMMAND is the command used to invoke the job.
+ *
+ * No params, no return
+ */
+void print_background_processes();
+
 
 
 
