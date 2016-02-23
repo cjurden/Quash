@@ -88,10 +88,10 @@ void exec_command(char** cmdbuf, int len){
   if(p != -1){
     int i = 0;
     while(cmdbuf[i] != "|"){
-        argc
+        //argc
     }
-    }
-  } else {
+  }
+  else {
     for(int i = 0; i < len; i++){
         if(cmdbuf[i] == "set"){
 
@@ -112,19 +112,19 @@ void exec_command(char** cmdbuf, int len){
         }
       }
     }
-  }
 
-  //if not there, check path
-
-}
+      //if not there, check path
+  }//end exec_command
 
 void store_commands_before_pipe(char** cmdbuf, int piploc){
-  for(int i = 0; i < piploc-1; i++)
-}
+  for(int i = 0; i < piploc-1; i++){
 
-void exec_command_with_pipe {
+  }
+}//end store_commands_before_pipe
 
-}
+void exec_command_with_pipe() {
+
+}//end exec_command_with_pipe
 
 //see if pipes are in command line
 int check_for_pipe(char** cmdbuf){
@@ -134,19 +134,42 @@ int check_for_pipe(char** cmdbuf){
     }
   }
   return -1;
-}
+}//end check_for_pipe
 
 bool in_cmd_set(char* input)
 {
 
 }
-/**
-* CHANGE_DIRECTORY will invoke the chdir() UNIX system call to
-* change the working directory to that specified in path.
-*/
-void change_directory(const char* path) {
 
-}
+//-------------EXECUTION METHODS ------------------//
+void change_directory(const char* path) {
+  if(chdir(path) < 0){
+    puts("Error. Invalid directory.");
+  }
+  else{
+    puts("Successfully changed to");
+    puts(path);
+  }
+}//end change_directory
+
+void print_working_directory(){
+  char cwd[MAX_BUFFER];
+  if(getcwd(cwd, sizeof(cwd)) != NULL){
+    fprintf(stdout, "Current working directory: %s\n", cwd);
+  }
+  else{
+    perror("getcwd() error");
+  }
+}//end print_working_directory
+
+void echo(const char* path_to_echo){
+
+}//end echo
+
+void print_background_processes(){
+  //need to implement
+  
+}//end print_background_processes
 
 /**
  * Quash entry point
