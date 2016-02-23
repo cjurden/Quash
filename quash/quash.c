@@ -162,14 +162,18 @@ void print_working_directory(){
   }
 }//end print_working_directory
 
-void echo(const char* path_to_echo){
+void execute_echo(const char* path_to_echo){
 
 }//end echo
 
 void print_background_processes(){
   //need to implement
-  
+
 }//end print_background_processes
+
+void set_env_variable(const char* var, const char* val){
+
+}
 
 /**
  * Quash entry point

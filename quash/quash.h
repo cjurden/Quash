@@ -86,7 +86,7 @@ void print_working_directory();
   * the terminal.
   * Uses the UNIX pwd() command. No params, no return.
   */
-void echo(const char* path_to_echo);
+void execute_echo(const char* path_to_echo);
 
 /**
  * Print all of the crrently running background processess in the format:
