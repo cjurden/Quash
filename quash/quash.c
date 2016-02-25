@@ -99,13 +99,15 @@ void exec_command(char* cmdbuf){
   if(p > -1){
     printf("pipe!");
 //char* args[2][100];
-    char arg1[100];
-    char arg2[100];
+    //char arg1[100];
+    //char arg2[100];
     char first[] = "";
-    while(strcmp(cmdbuf[i],'|')!=0)
+    int i = 0;
+    while(strcmp(cmdbuf[i],"|")!=0)
     {
       strcat(first, cmdbuf[i]);
     }
+    i = p+1;
     char second[] = "";
     while(cmdbuf[i]!=NULL)
     {
@@ -192,7 +194,7 @@ void exec_command_with_pipe(char* first, char* second){
       close(fd_1[0]);
       close(fd_1[1]);
       if((execl(BASH_EXEC, BASH_EXEC, "-c", first, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing first command. ERROR#%d\n", , errno);
+  		    fprintf(stderr, "\nError executing first command. ERROR#%d\n", errno);
       }
       //exit(0);
     }
@@ -225,7 +227,7 @@ void exec_command_with_pipe(char* first, char* second){
       close(fd_2[0]);
       close(fd_2[1]);
       if((execl(BASH_EXEC, BASH_EXEC, "-c", second, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing second command. ERROR#%d\n", arg2[0], errno);
+  		    fprintf(stderr, "\nError executing second command. ERROR#%d\n", errno);
       }
       //exit(0);
     }
