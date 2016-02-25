@@ -12,8 +12,17 @@
                    // contained.
 
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <strings.h>
+#include <errno.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
 #define MAX_BUFFER 1024
 #define VALID_COMMAND_LENGTH 7
+#define BASH_EXEC  "/bin/bash"
 /**************************************************************************
  * Private Variables
  **************************************************************************/
@@ -59,7 +68,7 @@ bool get_command(command_t* cmd, FILE* in) {
     }
     else
       cmd->cmdlen = len;
-
+      printf("%s\n", cmd->cmdstr);
     return true;
   }
   else
@@ -67,12 +76,13 @@ bool get_command(command_t* cmd, FILE* in) {
 }
 
 //returns number of commands
-int read_command(command_t* cmd, char** cmdbuf){
+void read_command(command_t* cmd, char** cmdbuf){
   char* cstring = strtok(cmd->cmdstr, " ");
   int len = 0;
   //read cstring, break it up and go through each until you reach null.
   while(cstring != NULL){
     cmdbuf[len] = cstring;
+  //  printf("these are individual command: %s\n", cstring);
     if(cstring == "|"){
       //PIPE_FLAG = 1;
     }
@@ -82,46 +92,57 @@ int read_command(command_t* cmd, char** cmdbuf){
   return len;
 }
 
-void exec_command(char** cmdbuf, int len){
+void exec_command(char* cmdbuf){
   //search global variable containing execs
-  char** args[2][100];
   int p = check_for_pipe(cmdbuf);
-  if(p != -1){
+  //printf("checking for pipe, returned %d\n", p);
+  if(p > -1){
+    printf("pipe!");
+//char* args[2][100];
+    char arg1[100];
+    char arg2[100];
+    for(int i = 0; i < 100; i++)
+    {
+      arg1[i] = NULL;
+      arg2[i] = NULL;
+    }
     for(int i = 0; i < p; i++)
     {
-      args[0][i] = cmdbuf[i];
+      //args[0][i] = cmdbuf[i];
+      arg1[i] = cmdbuf[i];
+      printf(cmdbuf[i]);
     }
-    for(int i = p+1; i < 100; i++)
+    int j = 0;
+    int i = p+1;
+    while(cmdbuf[i] != NULL)
     {
-      int j = 0;
-      int backlen;
-      if(cmdbuf[i] != NULL)
-      {
-        args[1][j] = cmdbuf[i];
-        j++;
-      }
+      //args[1][j] = cmdbuf[i];
+      arg2[j] = cmdbuf[i];
+      j++;
+      i++;
     }
-    exec_command_with_pipe(args);
+
+    //will have to make exec command with pipe...
+    exec_command_with_pipe(arg1, arg2);
   }
   else {
+  /*
     for(int i = 0; i < len; i++){
         if(cmdbuf[i] == "set"){
-
-        }else if(cmdbuf[i] == "echo"){
-
+          }else if(cmdbuf[i] == "echo"){
         }else if(cmdbuf[i] == "cd"){
-
         }else if(cmdbuf[i] == "pwd"){
-
         }else if(cmdbuf[i] == "quit"){
-
         }else if(cmdbuf[i] == "exit"){
-
         }else if(cmdbuf[i] == "jobs"){
-
         }else if(cmdbuf[i] == ""){
-
         }
+      }*/
+      char buf[] = "";
+      join(cmdbuf, &buf);
+      printf("did we get here?? %s\n", buf);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0){
+        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmdbuf[0], errno);
       }
     }
 
@@ -131,12 +152,14 @@ void exec_command(char** cmdbuf, int len){
 void store_commands_before_pipe(char** cmdbuf, int piploc){
   for(int i = 0; i < piploc-1; i++){
 
-  }*/
-}//end store_commands_before_pipe
+  }
+}*///end store_commands_before_pipe
 
 //passed 2D array with commands before and after pipe
 //for more than one pipe, add parameter for # of pipes (same as # of rows in array)
-void exec_command_with_pipe(char*** argbuf) {
+
+//void exec_command_with_pipe(char*** argbuf)
+void exec_command_with_pipe(char** arg1, char** arg2){
   //create pipe structure
   int fd_1[2];
   int fd_2[2];
@@ -147,25 +170,92 @@ void exec_command_with_pipe(char*** argbuf) {
 	  exit(EXIT_FAILURE);
   } else {
     //might need to declare this above...
-    pid_1 = fork();
+    pid_t pid_1 = fork();
     if(pid_1 == -1)
     {
       perror("fork");
       exit(EXIT_FAILURE);
     } else {
-      char cmdbuf[BSIZE];
-      bzero(cmdbuf, BSIZE);
-      sprint()
+      char buf[] = "";
+      join(arg1, &buf);
+
+      char cmdbuf[256];
+      bzero(cmdbuf, 256);
+
+      sprintf(cmdbuf, "%s", buf);
+      printf("in the first process! %s", cmdbuf);
+      dup2(fd_1[1], STDOUT_FILENO);
+
+      close(fd_1[0]);
+      close(fd_1[1]);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", cmdbuf, (char*) 0))<0) {
+  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", arg1[0], errno);
+      }
+      //exit(0);
+    }
+  }
+  if (pipe(fd_2) == -1)
+  {
+    perror("pipe");
+	  exit(EXIT_FAILURE);
+  } else {
+    //might need to declare this above...
+    pid_t pid_2 = fork();
+    if(pid_2 == -1)
+    {
+      perror("fork");
+      exit(EXIT_FAILURE);
+    } else {
+
+
+      char buf[] = "";
+      join(arg2, &buf);
+
+      char cmdbuf[256];
+      bzero(cmdbuf, 256);
+
+      sprintf(cmdbuf, "%s", buf);
+
+      dup2(fd_2[0], STDIN_FILENO);
+      dup2(fd_2[1], STDOUT_FILENO);
+
+      close(fd_2[0]);
+      close(fd_2[1]);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", cmdbuf, (char*) 0))<0) {
+  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", arg2[0], errno);
+      }
+      //exit(0);
     }
   }
 }//end exec_command_with_pipe
 
+//helper function for rejoining strings
+void join(char** cmdbuf, char* buf)
+{
+  char** tempBuf = cmdbuf;
+  int i = 0;
+
+  //rebuild command string
+  while(tempBuf[i] != NULL)
+  {
+    strcat(tempBuf[i], " ");
+    strcat(buf, tempBuf[i]);
+    i++;
+  }
+}
+
 //see if pipes are in command line
 int check_for_pipe(char** cmdbuf){
-  for(int i = 0; i < 100; i++){
-    if(cmdbuf[i] == "|"){
+  int i = 0;
+  while(cmdbuf[i]!=NULL){
+    printf("this is cmdbuf[%d]: %s\n", i, cmdbuf[i]);
+
+  //  sprintf(cur, "%s", cmdbuf[i]);
+    if(strcmp(cmdbuf[i],"|")==0){
+      printf("\napparent pipe at %d, %s\n",i, cmdbuf[i]);
       return i;
     }
+    i++;
   }
   return -1;
 }//end check_for_pipe
@@ -218,7 +308,7 @@ void set_env_variable(const char* var, const char* val){
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-  char cmdbuf[MAX_BUFFER]; //< array holding individual commands
+  char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
 
 
   start();
@@ -231,6 +321,9 @@ int main(int argc, char** argv) {
     // NOTE: I would not recommend keeping anything inside the body of
     // this while loop. It is just an example.
 
+    read_command(&cmd, &cmdbuf);
+    printf(cmdbuf[0]);
+    exec_command(&cmdbuf);
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit"))
       terminate(); // Exit Quash

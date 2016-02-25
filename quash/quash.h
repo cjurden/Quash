@@ -61,13 +61,14 @@ void terminate();
  */
 bool get_command(command_t* cmd, FILE* in);
 
-int read_command(command_t* cmd, char** cmdbuf);
-void exec_command(char** cmdbuf, int len);
+void read_command(command_t* cmd, char** cmdbuf);
+void exec_command(char* cmdbuf);
 void store_commands_before_pipe(char** cmdbuf, int piploc);
-void exec_command_with_pipe();
+//void exec_command_with_pipe(char*** args);
+void exec_command_with_pipe(char** arg1, char** arg2);
 int check_for_pipe(char** cmdbuf);
 bool in_cmd_set(char* input);
-
+void join(char** cmdbuf, char* buf);
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.
