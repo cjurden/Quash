@@ -16,13 +16,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <strings.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
 #define MAX_BUFFER 1024
 #define VALID_COMMAND_LENGTH 7
-#define BASH_EXEC  "/bin/bash"
+#define BASH_EXEC "/bin/bash"
+#define BSIZE 256
 /**************************************************************************
  * Private Variables
  **************************************************************************/
@@ -33,7 +35,7 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
-static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
+//static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
  * Private Functions
@@ -79,43 +81,101 @@ bool get_command(command_t* cmd, FILE* in) {
 * parse command will return a pointer to a character
 * array containing all commands passed on a single line
 */
-void parse_command(command_t* cmd, char** cmdbuf){
+void parse_command(char* cmd){
 
-  char *token = strtok(cmd->cmdstr, " ");
-  int i = 0;
-  while(token != NULL){
-    //fprintf(stdout, "token is %s\n", token);
-    cmdbuf[i] = token;
-    i++;
-    token = strtok(NULL, " ");
+  char* pch;
+  int pipe_loc = 0;
+  pch = strchr(cmd,'|');
+  if(pch!=NULL)
+  {
+    //then we have a pipe character, need to split the commands and then execute
+    printf ("found at %d\n", pch-cmd+1);
+    pipe_loc = (int)(pch-cmd);
+
+    //copy from 0 to pipe_loc - 1
+    char* chop = strtok(cmd, "|\0");
+    char* first_arg = chop;
+    chop = strtok(NULL, "\0");
+    char* second_arg = chop;
+
+    //char second_arg[VALID_COMMAND_LENGTH+1];
+    //second_arg[VALID_COMMAND_LENGTH] = "\0";
+    //f/irst_arg[VALID_COMMAND_LENGTH] = "\0";
+    char* temp1 = cmd;
+    char* temp2 = cmd;
+  //  strncpy(first_arg, temp1, pipe_loc-1);
+    printf("%d\n",pipe_loc);
+
+
+  //  strncpy(second_arg, temp2+pipe_loc+1, strlen(cmd)-1);
+    printf("%s",second_arg);
+    //printf(pipe_loc);
+    //pch = strchr(pch+1,'s');
+    /*
+    while(first_arg!="\0")
+    {
+      st
+    }*/
+
+    //start pipe process...
+    int fd_1[2];
+    pid_t pid_1, pid_2;
+    if (pipe(fd_1) == -1)
+    {
+      perror("pipe");
+      exit(EXIT_FAILURE);
+    }
+
+      pid_1 = fork();
+      if(pid_1 == -1)
+      {
+        perror("fork");
+        exit(EXIT_FAILURE);
+      } else {
+  /*
+        char cmdbuf[BSIZE];
+        bzero(cmdbuf, BSIZE);
+
+        printf("in the first process! %s", first);
+        sprintf(cmdbuf, "%s", first);
+        */
+        dup2(fd_1[1], STDOUT_FILENO);
+
+        if((execl(BASH_EXEC, BASH_EXEC, "-c", first_arg, (char*) 0))<0) {
+            fprintf(stderr, "\nError executing %s. ERROR#%d\n", first_arg, errno);
+        }
+        close(fd_1[1]);
+        close(fd_1[0]);
+      //  parse_command(first_arg);
+        exit(0);
+      }
+      //might need to declare this above...
+      pid_2 = fork();
+      if(pid_2 == -1)
+      {
+        perror("fork");
+        exit(EXIT_FAILURE);
+      } else {
+        dup2(fd_1[0], STDIN_FILENO);
+
+        if((execl(BASH_EXEC, BASH_EXEC, "-c", second_arg, (char*) 0))<0) {
+            fprintf(stderr, "\nError executing %s. ERROR#%d\n", second_arg, errno);
+        }
+        close(fd_1[0]);
+        close(fd_1[1]);
+        exit(0);
+      }
   }
+  else{
+    printf("did we get here?? %s\n", cmd);
+    if((execl(BASH_EXEC, BASH_EXEC, "-c", cmd, (char*) 0))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
+    }
+  }
+  return 0;
 }
 
 void exec_command(char* cmdbuf){
-  //search global variable containing execs
-  int p = check_for_pipe(cmdbuf);
-  //printf("checking for pipe, returned %d\n", p);
-  if(p > -1){
-    printf("pipe!");
-    char* args[2][100];
-    int i = 0;
-    while(strcmp(cmdbuf[i],"|")!=0)
-    {
-      args[0][i] = cmdbuf[i];
-      i++;
-    }
-    i = p+1;
-
-    while(cmdbuf[i]!=NULL)
-    {
-      args[1][i] = cmdbuf[i];
-      i++;
-    }
-
-    //will have to make exec command with pipe...
-    exec_command_with_pipe(args);
-  }
-  else {
   /*
     for(int i = 0; i < len; i++){
         if(cmdbuf[i] == "set"){
@@ -127,17 +187,18 @@ void exec_command(char* cmdbuf){
         }else if(cmdbuf[i] == "jobs"){
         }else if(cmdbuf[i] == ""){
         }
-      }*/
-      char buf[] = "";
-      join(cmdbuf, &buf);
-      printf("did we get here?? %s\n", buf);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0){
-        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmdbuf[0], errno);
+    }*/
+
+      //char buf[] = "";
+    //  join(cmdbuf, &buf);
+      printf("did we get here?? %s\n", cmdbuf);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", cmdbuf, (char*) 0))<0){
+        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmdbuf, errno);
       }
-    }
+}
 
       //if not there, check path
-  }//end exec_command
+  //end exec_command
 /*
 void store_commands_before_pipe(char** cmdbuf, int piploc){
   for(int i = 0; i < piploc-1; i++){
@@ -148,75 +209,52 @@ void store_commands_before_pipe(char** cmdbuf, int piploc){
 //passed 2D array with commands before and after pipe
 //for more than one pipe, add parameter for # of pipes (same as # of rows in array)
 
-void exec_command_with_pipe(char*** argbuf){
+void exec_command_with_pipe(char* first, char* second){
   //create pipe structure
   int fd_1[2];
-  int fd_2[2];
-
+  pid_t pid_1, pid_2;
   if (pipe(fd_1) == -1)
   {
     perror("pipe");
 	  exit(EXIT_FAILURE);
-  } else {
-    //might need to declare this above...
-    pid_t pid_1 = fork();
+  }
+
+    pid_1 = fork();
     if(pid_1 == -1)
     {
       perror("fork");
       exit(EXIT_FAILURE);
     } else {
-      char buf[] = "";
-      join(argbuf[0], &buf);
+/*
+      char cmdbuf[BSIZE];
+      bzero(cmdbuf, BSIZE);
 
-      //char cmdbuf[256];
-      //bzero(cmdbuf, 256);
-
-      //sprintf(cmdbuf, "%s", buf);
-      //printf("in the first process! %s", first);
+      printf("in the first process! %s", first);
+      sprintf(cmdbuf, "%s", first);
+      */
       dup2(fd_1[1], STDOUT_FILENO);
 
-      close(fd_1[0]);
+      /*close(fd_1[0]);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", cmdbuf, (char*) 0))<0) {
+  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", first, errno);
+      }*/
+      parse_command(first);
       close(fd_1[1]);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", argbuf[0][0], errno);
-      }
-      //exit(0);
+      exit(0);
     }
-  }
-  if (pipe(fd_2) == -1)
-  {
-    perror("pipe");
-	  exit(EXIT_FAILURE);
-  } else {
     //might need to declare this above...
-    pid_t pid_2 = fork();
+    pid_2 = fork();
     if(pid_2 == -1)
     {
       perror("fork");
       exit(EXIT_FAILURE);
     } else {
-
-
-      char buf[] = "";
-      join(argbuf[1], &buf);
-
-      //char cmdbuf[256];
-      //bzero(cmdbuf, 256);
-
-      //sprintf(cmdbuf, "%s", buf);
-
-      dup2(fd_2[0], STDIN_FILENO);
-      dup2(fd_2[1], STDOUT_FILENO);
-
-      close(fd_2[0]);
-      close(fd_2[1]);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", argbuf[1][0], errno);
-      }
-      //exit(0);
+      dup2(fd_1[0], STDIN_FILENO);
+      parse_command(second);
+      close(fd_1[0]);
+      exit(0);
     }
-  }
-}//end exec_command_with_pipe
+  }//end exec_command_with_pipe
 
 //helper function for rejoining strings
 void join(char** cmdbuf, char* buf)
@@ -232,22 +270,6 @@ void join(char** cmdbuf, char* buf)
     i++;
   }
 }
-
-//see if pipes are in command line
-int check_for_pipe(char** cmdbuf){
-  int i = 0;
-  while(cmdbuf[i]!=NULL){
-    printf("this is cmdbuf[%d]: %s\n", i, cmdbuf[i]);
-
-  //  sprintf(cur, "%s", cmdbuf[i]);
-    if(strcmp(cmdbuf[i],"|")==0){
-      printf("\napparent pipe at %d, %s\n",i, cmdbuf[i]);
-      return i;
-    }
-    i++;
-  }
-  return -1;
-}//end check_for_pipe
 
 bool in_cmd_set(char* input)
 {
@@ -327,9 +349,10 @@ int main(int argc, char** argv) {
     // NOTE: I would not recommend keeping anything inside the body of
     // this while loop. It is just an example.
 
-    parse_command(&cmd, &cmdbuf);
-    //printf(cmdbuf[0]);
-    exec_command(&cmdbuf);
+    parse_command(cmd.cmdstr);
+    //puts(check_for_pipe(&cmdbuf);
+
+    //exec_command(&cmdbuf);
 
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
@@ -341,4 +364,4 @@ int main(int argc, char** argv) {
    }//end while
 
   return EXIT_SUCCESS;
-}
+};
