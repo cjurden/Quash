@@ -149,44 +149,74 @@ void parse_command(char* cmd){
     if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
-
+      char path[100];
+      int i = 1;
+      if(cmds[i]==NULL){
+        path = "";
+      } else {
+        while(cmds[i]!=NULL)
+        {
+          char* temp = cmds[i];
+          if(cmds[i+1]!=NULL)
+          {
+            strcat(temp, " ");
+            strcat(path, temp);
+          }
+          strcat(path, temp);
+          i++;
+        }
+      }
     }else if(!strcmp(cmds[0], "cd")){
       char path[100];
       int i = 1;
       printf("in cd, second argument: %s\n", cmds[1]);
-      while(cmds[i]!=NULL)
-      {
-        char* temp = cmds[i];
-        if(cmds[i+1]!=NULL)
+      if(cmds[i]==NULL){
+        sprintf(path, "%s", getenv("HOME"));
+      } else {
+        while(cmds[i]!=NULL)
         {
-          strcat(temp, " ");
+          char* temp = cmds[i];
+          if(cmds[i+1]!=NULL)
+          {
+            strcat(temp, " ");
+            strcat(path, temp);
+          }
           strcat(path, temp);
+          i++;
         }
-        strcat(path, temp);
-        i++;
       }
-      printf("path: %s", path);
+      printf("path: %s\n", path);
       change_directory(path);
     }else if(!strcmp(cmds[0], "pwd")){
-
+      if(cmds[1]==NULL)
+      {
+        print_working_directory();
+      } else {
+        execvp_commands(cmds);
+      }
     }else if(!strcmp(cmds[0], "quit")){
-
+      terminate();
     }else if(!strcmp(cmds[0], "exit")){
-
+      terminate();
     }else if(!strcmp(cmds[0], "jobs")){
 
     }else if(!strcmp(cmds[0], "")){
-
+      //just want this to continue while doing nothing...
     } else {
-      printf("we are here!");
-      printf("makign call to system with argument %s", cmds[0]);
-      if((execvp(cmds[0], cmds))<0){
-        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
-      }
+      printf("we are here!\n");
+      printf("makign call to system with argument %s\n", cmds[0]);
+      execvp_commands(cmds);
     }
   }
 }
 
+void execvp_commands(char** cmds)
+{
+  printf("executing with execvp\n");
+  if((execvp(cmds[0], cmds))<0){
+    fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds, errno);
+  }
+}
 
 
 bool in_cmd_set(char* input)
