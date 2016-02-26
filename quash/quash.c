@@ -104,7 +104,7 @@ void parse_command(char* cmd){
     char* temp1 = cmd;
     char* temp2 = cmd;
   //  strncpy(first_arg, temp1, pipe_loc-1);
-    printf("%d\n",pipe_loc);
+    //printf("%d\n",pipe_loc);
 
 
   //  strncpy(second_arg, temp2+pipe_loc+1, strlen(cmd)-1);
@@ -172,7 +172,6 @@ void parse_command(char* cmd){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
     }
   }
-  return 0;
 }
 
 void exec_command(char* cmdbuf){
