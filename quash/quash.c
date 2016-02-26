@@ -110,13 +110,6 @@ void parse_command(char* cmd){
         perror("fork");
         exit(EXIT_FAILURE);
       } else {
-  /*
-        char cmdbuf[BSIZE];
-        bzero(cmdbuf, BSIZE);
-
-        printf("in the first process! %s", first);
-        sprintf(cmdbuf, "%s", first);
-        */
         dup2(fd_1[1], STDOUT_FILENO);
 
         parse_command(first_arg);
@@ -154,19 +147,19 @@ void parse_command(char* cmd){
     char* tempCmd = cmd;
     ptr = strtok(tempCmd, " ");
     int ind = 0;
-    while(ptr!=NULL)
+    while(ptr != NULL)
     {
       cmds[ind] = ptr;
       printf("current string: %s\n", cmds[ind]);
-      ind++;
       ptr = strtok(NULL, " ");
+      ind++;
     }
     printf("\n first string in command %s", cmds[0]);
     if(strcmp(cmds[0], "set")==0){
 
-    }else if(strcmp(cmds[0], "echo")==0){
+    }else if(!strcmp(cmds[0], "echo")==0){
 
-    }else if(strcmp(cmds[0], "cd")==0){
+    }else if(!strcmp(cmds[0], "cd")==0){
       char* path = "";
       int i = 1;
       printf("in cd, second argument: %s", cmd[1]);
@@ -176,16 +169,17 @@ void parse_command(char* cmd){
         strcat(path, cmds[i]);
         i++;
       }
+      printf("path: %s", path);
       change_directory(path);
-    }else if(strcmp(cmds[0], "pwd")==0){
+    }else if(!strcmp(cmds[0], "pwd")){
 
-    }else if(strcmp(cmds[0], "quit")==0){
+    }else if(!strcmp(cmds[0], "quit")==0){
 
-    }else if(strcmp(cmds[0], "exit")==0){
+    }else if(!strcmp(cmds[0], "exit")==0){
 
-    }else if(strcmp(cmds[0], "jobs")==0){
+    }else if(!strcmp(cmds[0], "jobs")==0){
 
-    }else if(strcmp(cmds[0], "")==0){
+    }else if(!strcmp(cmds[0], "")==0){
 
     } else {
       if((execvp(cmds[0], cmds))<0){
@@ -262,13 +256,13 @@ void set_env_variable(const char* var, const char* val){
  * @return program exit status
  */
 int main(int argc, char** argv) {
-
+  command_t cmd; //< Command holder argument
+  char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
   start();
 
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
-  command_t cmd; //< Command holder argument
-  char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
+
   get_command(&cmd, stdin);
   // Main execution loop
   while (is_running()) {
@@ -277,9 +271,6 @@ int main(int argc, char** argv) {
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
       terminate(); // Exit Quash
     }
-    else{
-
-     }
    }//end while
 
   return EXIT_SUCCESS;
