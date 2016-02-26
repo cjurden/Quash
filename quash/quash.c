@@ -93,29 +93,28 @@ void parse_command(char* cmd){
     pipe_loc = (int)(pch-cmd);
 
     //copy from 0 to pipe_loc - 1
-    char* chop = strtok(cmd, "|\0");
-    char* first_arg = chop;
-    chop = strtok(NULL, "\0");
-    char* second_arg = chop;
 
-    //char second_arg[VALID_COMMAND_LENGTH+1];
-    //second_arg[VALID_COMMAND_LENGTH] = "\0";
-    //f/irst_arg[VALID_COMMAND_LENGTH] = "\0";
+    /******************************************/
+    /******************************************/
+    //char* chop = strtok(cmd, "|\0");
+    //char* first_arg = chop;
+    //chop = strtok(NULL, "\0");
+    //char* second_arg = chop;
+    /******************************************/
+    /******************************************/
+    char first_arg[VALID_COMMAND_LENGTH];
+    char second_arg[VALID_COMMAND_LENGTH];
+
     char* temp1 = cmd;
     char* temp2 = cmd;
-  //  strncpy(first_arg, temp1, pipe_loc-1);
+
+    strncpy(first_arg, temp1, pipe_loc-1);
     printf("%d\n",pipe_loc);
 
 
-  //  strncpy(second_arg, temp2+pipe_loc+1, strlen(cmd)-1);
+    strncpy(second_arg, temp2+pipe_loc+1, strlen(cmd)-1);
     printf("%s",second_arg);
-    //printf(pipe_loc);
-    //pch = strchr(pch+1,'s');
-    /*
-    while(first_arg!="\0")
-    {
-      st
-    }*/
+
 
     //start pipe process...
     int fd_1[2];
@@ -132,13 +131,7 @@ void parse_command(char* cmd){
         perror("fork");
         exit(EXIT_FAILURE);
       } else {
-  /*
-        char cmdbuf[BSIZE];
-        bzero(cmdbuf, BSIZE);
 
-        printf("in the first process! %s", first);
-        sprintf(cmdbuf, "%s", first);
-        */
         dup2(fd_1[1], STDOUT_FILENO);
 
         if((execl(BASH_EXEC, BASH_EXEC, "-c", first_arg, (char*) 0))<0) {
@@ -163,6 +156,7 @@ void parse_command(char* cmd){
         }
         close(fd_1[0]);
         close(fd_1[1]);
+        //parse_command(second_arg);
         exit(0);
       }
   }
