@@ -97,37 +97,23 @@ void exec_command(char* cmdbuf){
   //printf("checking for pipe, returned %d\n", p);
   if(p > -1){
     printf("pipe!");
-//char* args[2][100];
-    //char arg1[100];
-    //char arg2[100];
-    char first[] = "";
+    char* args[2][100];
     int i = 0;
     while(strcmp(cmdbuf[i],"|")!=0)
     {
-      strcat(first, cmdbuf[i]);
-    }
-    i = p+1;
-    char second[] = "";
-    while(cmdbuf[i]!=NULL)
-    {
-      //args[0][i] = cmdbuf[i];
-      //arg1[i] = cmdbuf[i];
-      //printf(cmdbuf[i]);
-      strcat(second, cmdbuf[i]);
-    }
-    /*
-    int j = 0;
-    int i = p+1;
-    while(cmdbuf[i] != NULL)
-    {
-      //args[1][j] = cmdbuf[i];
-      arg2[j] = cmdbuf[i];
-      j++;
+      argbuf[0][i] = cmdbuf[i];
       i++;
     }
-    */
+    i = p+1;
+
+    while(cmdbuf[i]!=NULL)
+    {
+      args[1][i] = cmdbuf[i];
+      i++;
+    }
+
     //will have to make exec command with pipe...
-    exec_command_with_pipe(first, second);
+    exec_command_with_pipe(args);
   }
   else {
   /*
@@ -162,8 +148,7 @@ void store_commands_before_pipe(char** cmdbuf, int piploc){
 //passed 2D array with commands before and after pipe
 //for more than one pipe, add parameter for # of pipes (same as # of rows in array)
 
-//void exec_command_with_pipe(char*** argbuf)
-void exec_command_with_pipe(char* first, char* second){
+void exec_command_with_pipe(char*** argbuf){
   //create pipe structure
   int fd_1[2];
   int fd_2[2];
@@ -180,8 +165,8 @@ void exec_command_with_pipe(char* first, char* second){
       perror("fork");
       exit(EXIT_FAILURE);
     } else {
-      //char buf[] = "";
-      //join(arg1, &buf);
+      char buf[] = "";
+      join(argbuf[0], &buf);
 
       //char cmdbuf[256];
       //bzero(cmdbuf, 256);
@@ -192,8 +177,8 @@ void exec_command_with_pipe(char* first, char* second){
 
       close(fd_1[0]);
       close(fd_1[1]);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", first, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing first command. ERROR#%d\n", errno);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0) {
+  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", argbuf[0][0], errno);
       }
       //exit(0);
     }
@@ -212,8 +197,8 @@ void exec_command_with_pipe(char* first, char* second){
     } else {
 
 
-      //char buf[] = "";
-      //join(arg2, &buf);
+      char buf[] = "";
+      join(argbuf[1], &buf);
 
       //char cmdbuf[256];
       //bzero(cmdbuf, 256);
@@ -225,8 +210,8 @@ void exec_command_with_pipe(char* first, char* second){
 
       close(fd_2[0]);
       close(fd_2[1]);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", second, (char*) 0))<0) {
-  		    fprintf(stderr, "\nError executing second command. ERROR#%d\n", errno);
+      if((execl(BASH_EXEC, BASH_EXEC, "-c", buf, (char*) 0))<0) {
+  		    fprintf(stderr, "\nError executing %s. ERROR#%d\n", argbuf[1][0], errno);
       }
       //exit(0);
     }
