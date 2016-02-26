@@ -166,7 +166,6 @@ void parse_command(char* cmd){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
     }
   }
-  return 0;
 }
 
 void exec_command(char* cmdbuf){
