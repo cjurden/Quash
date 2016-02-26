@@ -69,6 +69,8 @@ void exec_command_with_pipe(char* first, char* second);
 int check_for_pipe(char** cmdbuf);
 bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
+
+
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.
@@ -97,7 +99,15 @@ void execute_echo(const char* path_to_echo);
  *
  * No params, no return
  */
-void print_background_processes();
+void print_jobs();
+
+/**
+ * Set or update an environmental variable
+ * Uses the UNIX setenv() system call.
+ * @param var - the environmental variable to be set
+ * @param val - the filepath to which var will be set
+ */
+void set_env_variable(const char* var, const char* val);
 
 
 

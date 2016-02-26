@@ -89,7 +89,7 @@ void read_command(command_t* cmd, char** cmdbuf){
     cstring = strtok(NULL, " ");
     len++;
   }
-  return len;
+  //return len;
 }
 
 void exec_command(char* cmdbuf){
@@ -276,8 +276,7 @@ void change_directory(const char* path) {
     puts("Error. Invalid directory.");
   }
   else{
-    puts("Successfully changed to");
-    puts(path);
+    fprintf(stdout, "Successfully changed to %s\n",path );
   }
 }//end change_directory
 
@@ -293,15 +292,34 @@ void print_working_directory(){
 
 void execute_echo(const char* path_to_echo){
 
+    if(strcmp(path_to_echo, "$PATH") == 0){
+        //echo $PATH var
+        fprintf(stdout,"PATH: %s\n",getenv("PATH"));
+    }
+    else if(strcmp(path_to_echo, "$HOME") == 0){
+        //echo $HOME var
+        fprintf(stdout,"HOME: %s\n",getenv("HOME"));
+    }
+    else{
+        //just echo whatever was inputted
+        puts(path_to_echo);
+    }
+
 }//end echo
 
-void print_background_processes(){
-  //need to implement
+void print_jobs(){
 
 }//end print_background_processes
 
 void set_env_variable(const char* var, const char* val){
 
+    if(setenv(var,val,0) < 0){
+        perror("set_env_variable() error\n");
+    }
+
+    else{
+        fprintf(stdout, "Successfully set %s to %s.\n",var, val);
+    }
 }
 
 /**
@@ -315,7 +333,6 @@ int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
   char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
 
-
   start();
 
   puts("Welcome to Quash!");
@@ -326,15 +343,17 @@ int main(int argc, char** argv) {
     // NOTE: I would not recommend keeping anything inside the body of
     // this while loop. It is just an example.
 
+
     read_command(&cmd, &cmdbuf);
     printf(cmdbuf[0]);
     exec_command(&cmdbuf);
+
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit"))
       terminate(); // Exit Quash
     else
       puts(cmd.cmdstr); // Echo the input string
-  }
+     }
 
   return EXIT_SUCCESS;
 }
