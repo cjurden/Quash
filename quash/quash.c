@@ -82,6 +82,7 @@ bool get_command(command_t* cmd, FILE* in) {
 */
 void parse_command(char* cmd){
 
+  //CHECK FOR PIPE
   char* pch;
   pch = strchr(cmd,'|');
   if(pch!=NULL)
@@ -111,12 +112,7 @@ void parse_command(char* cmd){
         exit(EXIT_FAILURE);
       } else {
         dup2(fd_1[1], STDOUT_FILENO);
-
         parse_command(first_arg);
-        /*
-        if((execl(BASH_EXEC, BASH_EXEC, "-c", first_arg, (char*) 0))<0) {
-            fprintf(stderr, "\nError executing %s. ERROR#%d\n", first_arg, errno);
-        }*/
         close(fd_1[1]);
         //close(fd_1[0]);
         exit(0);
@@ -129,59 +125,61 @@ void parse_command(char* cmd){
         exit(EXIT_FAILURE);
       } else {
         dup2(fd_1[0], STDIN_FILENO);
-
         parse_command(second_arg);
-        /*
-        if((execl(BASH_EXEC, BASH_EXEC, "-c", second_arg, (char*) 0))<0) {
-            fprintf(stderr, "\nError executing %s. ERROR#%d\n", second_arg, errno);
-        }*/
         close(fd_1[0]);
         //close(fd_1[1]);
         exit(0);
       }
   }
   else{
-    //printf("did we get here?? %s\n", cmd);
+    //NO PIPE
     char* ptr;
-    char* cmds[100];
+    char* cmds[100] = {NULL};
     char* tempCmd = cmd;
     ptr = strtok(tempCmd, " ");
     int ind = 0;
     while(ptr != NULL)
     {
       cmds[ind] = ptr;
-      printf("current string: %s\n", cmds[ind]);
+      printf("current string: %s\n", ptr);
       ptr = strtok(NULL, " ");
       ind++;
     }
-    printf("\n first string in command %s", cmds[0]);
-    if(strcmp(cmds[0], "set")==0){
+    //printf("\n first string in command %s", cmds[0]);
+    if(!strcmp(cmds[0], "set")){
 
-    }else if(!strcmp(cmds[0], "echo")==0){
+    }else if(!strcmp(cmds[0], "echo")){
 
-    }else if(!strcmp(cmds[0], "cd")==0){
-      char* path = "";
+    }else if(!strcmp(cmds[0], "cd")){
+      char path[100];
       int i = 1;
-      printf("in cd, second argument: %s", cmd[1]);
+      printf("in cd, second argument: %s\n", cmds[1]);
       while(cmds[i]!=NULL)
       {
-        strcat(cmds[i], " ");
-        strcat(path, cmds[i]);
+        char* temp = cmds[i];
+        if(cmds[i+1]!=NULL)
+        {
+          strcat(temp, " ");
+          strcat(path, temp);
+        }
+        strcat(path, temp);
         i++;
       }
       printf("path: %s", path);
       change_directory(path);
     }else if(!strcmp(cmds[0], "pwd")){
 
-    }else if(!strcmp(cmds[0], "quit")==0){
+    }else if(!strcmp(cmds[0], "quit")){
 
-    }else if(!strcmp(cmds[0], "exit")==0){
+    }else if(!strcmp(cmds[0], "exit")){
 
-    }else if(!strcmp(cmds[0], "jobs")==0){
+    }else if(!strcmp(cmds[0], "jobs")){
 
-    }else if(!strcmp(cmds[0], "")==0){
+    }else if(!strcmp(cmds[0], "")){
 
     } else {
+      printf("we are here!");
+      printf("makign call to system with argument %s", cmds[0]);
       if((execvp(cmds[0], cmds))<0){
         fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
       }
@@ -263,9 +261,9 @@ int main(int argc, char** argv) {
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
 
-  get_command(&cmd, stdin);
+
   // Main execution loop
-  while (is_running()) {
+  while (is_running() && get_command(&cmd, stdin)) {
     parse_command(cmd.cmdstr);
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
