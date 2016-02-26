@@ -61,7 +61,7 @@ void terminate();
  */
 bool get_command(command_t* cmd, FILE* in);
 
-void read_command(command_t* cmd, char** cmdbuf);
+void parse_command(command_t* cmd, char** cmdbuf);
 void exec_command(char* cmdbuf);
 void store_commands_before_pipe(char** cmdbuf, int piploc);
 //void exec_command_with_pipe(char*** args);

@@ -75,21 +75,20 @@ bool get_command(command_t* cmd, FILE* in) {
     return false;
 }
 
-//returns number of commands
-void read_command(command_t* cmd, char** cmdbuf){
-  char* cstring = strtok(cmd->cmdstr, " ");
-  int len = 0;
-  //read cstring, break it up and go through each until you reach null.
-  while(cstring != NULL){
-    cmdbuf[len] = cstring;
-  //  printf("these are individual command: %s\n", cstring);
-    if(cstring == "|"){
-      //PIPE_FLAG = 1;
-    }
-    cstring = strtok(NULL, " ");
-    len++;
+/*
+* parse command will return a pointer to a character
+* array containing all commands passed on a single line
+*/
+void parse_command(command_t* cmd, char** cmdbuf){
+
+  char *token = strtok(cmd->cmdstr, " ");
+  int i = 0;
+  while(token != NULL){
+    //fprintf(stdout, "token is %s\n", token);
+    cmdbuf[i] = token;
+    i++;
+    token = strtok(NULL, " ");
   }
-  //return len;
 }
 
 void exec_command(char* cmdbuf){
@@ -343,17 +342,18 @@ int main(int argc, char** argv) {
     // NOTE: I would not recommend keeping anything inside the body of
     // this while loop. It is just an example.
 
-
-    read_command(&cmd, &cmdbuf);
-    printf(cmdbuf[0]);
-    exec_command(&cmdbuf);
+    parse_command(&cmd, &cmdbuf);
+    //printf(cmdbuf[0]);
+    //exec_command(&cmdbuf);
 
     // The commands should be parsed, then executed.
-    if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit"))
+    if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
       terminate(); // Exit Quash
-    else
-      puts(cmd.cmdstr); // Echo the input string
+    }
+    else{
+      //puts(cmd.cmdstr); // Echo the input string
      }
+   }//end while
 
   return EXIT_SUCCESS;
 }
