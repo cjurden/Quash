@@ -101,7 +101,7 @@ void exec_command(char* cmdbuf){
     int i = 0;
     while(strcmp(cmdbuf[i],"|")!=0)
     {
-      argbuf[0][i] = cmdbuf[i];
+      args[0][i] = cmdbuf[i];
       i++;
     }
     i = p+1;
@@ -172,7 +172,7 @@ void exec_command_with_pipe(char*** argbuf){
       //bzero(cmdbuf, 256);
 
       //sprintf(cmdbuf, "%s", buf);
-      printf("in the first process! %s", first);
+      //printf("in the first process! %s", first);
       dup2(fd_1[1], STDOUT_FILENO);
 
       close(fd_1[0]);
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
 
     parse_command(&cmd, &cmdbuf);
     //printf(cmdbuf[0]);
-    //exec_command(&cmdbuf);
+    exec_command(&cmdbuf);
 
     // The commands should be parsed, then executed.
     if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
