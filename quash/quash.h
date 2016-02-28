@@ -68,8 +68,7 @@ void exec_command_with_pipe(char* first, char* second);
 int check_for_pipe(char* cmdbuf);
 bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
-
-
+void execvp_commands(char** cmds);
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.

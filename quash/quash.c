@@ -79,23 +79,34 @@ bool get_command(command_t* cmd, FILE* in) {
 
 /*
 * parse_command takes the cmdstr and acts accordingly
+* 3 cases for pipes, iniitial command that requires one std_out, middle case that requires in and out, end case that requires in
+* keep track of each of those pipes
+* can resuse arrays ,use 2 fd_1[2]s, kep track of beginning and end...
+* cmd1[], cmd2[], cmdall[][] where cmd all holds all commands, and removes the front one after execution.
+* keep track of PID
 */
 void parse_command(char* cmd){
 
   //CHECK FOR PIPE
   char* pch;
+  char* ich;
   pch = strchr(cmd,'|');
+  ich = strchr(cmd, '>');
+  if(ich!=NULL)
+  {
+
+  }
   if(pch!=NULL)
   {
     //then we have a pipe character, need to split the commands and then execute
     //use strtok to chop the strings, cleaner than strcpy
     char* chop = strtok(cmd, "|\0");
     char* first_arg = chop;
-    printf("%s",first_arg);
+    //printf("%s",first_arg);
 
     chop = strtok(NULL, "\0");
     char* second_arg = chop;
-    printf("%s",second_arg);
+    //printf("%s",second_arg);
     //start pipe process...
     int fd_1[2];
     pid_t pid_1, pid_2;
@@ -104,32 +115,38 @@ void parse_command(char* cmd){
       perror("pipe");
       exit(EXIT_FAILURE);
     }
-
       pid_1 = fork();
       if(pid_1 == -1)
       {
         perror("fork");
         exit(EXIT_FAILURE);
-      } else {
+      } else if (pid_1 == 0){
         dup2(fd_1[1], STDOUT_FILENO);
-        parse_command(first_arg);
         close(fd_1[1]);
-        //close(fd_1[0]);
-        exit(0);
+        close(fd_1[0]);
+
+        if((execl(BASH_EXEC, BASH_EXEC, "-c", first_arg, (char*) 0))<0) {
+    		fprintf(stderr, "\nError executing grep. ERROR#%d\n", errno);
+        }
       }
       //might need to declare this above...
+      close(fd_1[1]);
+      //support multiple processes, open up another pipe here
       pid_2 = fork();
       if(pid_2 == -1)
       {
         perror("fork");
         exit(EXIT_FAILURE);
-      } else {
+      } else if(pid_2 == 0) {
         dup2(fd_1[0], STDIN_FILENO);
-        parse_command(second_arg);
         close(fd_1[0]);
-        //close(fd_1[1]);
-        exit(0);
+        //parse_command(second_arg);
+
+        if((execl(BASH_EXEC, BASH_EXEC, "-c", second_arg, (char*) 0))<0) {
+    		fprintf(stderr, "\nError executing grep. ERROR#%d\n", errno);
+        }
       }
+      close(fd_1[0]);
   }
   else{
     //NO PIPE
@@ -145,10 +162,21 @@ void parse_command(char* cmd){
       ptr = strtok(NULL, " ");
       ind++;
     }
+    if(strcmp(cmds[ind-1], "&"))
+    {
+      //do a check for valid command
+      //remove the back of cmds array
+      pid_t pid = fork();
+      //run whatever command was inside in process...
+      if (pid == 0) {
+        parse_command(cmds);
+      }
+    }
     //printf("\n first string in command %s", cmds[0]);
     if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
+      /*
       char path[100];
       int i = 1;
       if(cmds[i]==NULL){
@@ -165,7 +193,7 @@ void parse_command(char* cmd){
           strcat(path, temp);
           i++;
         }
-      }
+      }*/
     }else if(!strcmp(cmds[0], "cd")){
       char path[100];
       int i = 1;
@@ -205,24 +233,23 @@ void parse_command(char* cmd){
     } else {
       printf("we are here!\n");
       printf("makign call to system with argument %s\n", cmds[0]);
+      pid_t pid = fork();
+      if (pid == 0){
       execvp_commands(cmds);
+      }
     }
   }
 }
 
+
 void execvp_commands(char** cmds)
 {
-  printf("executing with execvp\n");
-  if((execvp(cmds[0], cmds))<0){
-    fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds, errno);
-  }
+    printf("executing with execvp\n");
+    if((execvp(cmds[0], cmds))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+    }
 }
 
-
-bool in_cmd_set(char* input)
-{
-
-}
 
 //-------------EXECUTION METHODS ------------------//
 void change_directory(const char* path) {
@@ -244,6 +271,7 @@ void print_working_directory(){
   }
 }//end print_working_directory
 
+//Jamie asking Dr. Yun
 void execute_echo(const char* path_to_echo){
 
     if(strcmp(path_to_echo, "$PATH") == 0){
@@ -291,14 +319,10 @@ int main(int argc, char** argv) {
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
 
-
+  //check main argv to see if there are additional arguments to quash like a file to read commands from
   // Main execution loop
   while (is_running() && get_command(&cmd, stdin)) {
     parse_command(cmd.cmdstr);
-    // The commands should be parsed, then executed.
-    if (!strcmp(cmd.cmdstr, "exit") || !strcmp(cmd.cmdstr, "quit")){
-      terminate(); // Exit Quash
-    }
    }//end while
 
   return EXIT_SUCCESS;
