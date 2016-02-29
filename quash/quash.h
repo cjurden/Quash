@@ -32,24 +32,10 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
-typedef struct {
+typedef struct job_t{
   pid_t pid;
   char** command;
-} Job;
-
-typedef struct {
-  Container* next;
-  Container* prev;
-  int value;
-} Container;
-
-
-typedef struct {
-  Container* front;
-  Container* back;
-  Job job;
-  int size;
-} List;
+} job_t;
 
 /**
  * Starts the main loop by setting running flag to true.

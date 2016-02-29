@@ -39,8 +39,8 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-int jc = 0;
-static List jobs;
+static int jc = 0;
+static job_t* jobs[50];
 
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
@@ -176,22 +176,8 @@ void parse_command(char* cmd){
     }
     if(bch!=NULL)
     {
-      //do a check for valid command
-
-
       printf("in the background conditional!\n");
       bg = true;
-      //remove the back of cmds array, this might not work, try to set to null
-      int i = 0;
-      printf("this is at the end! %s\n", cmds[ind]);
-      while(cmds[i] != NULL)
-      {
-        printf("%s\n", cmds[i]);
-        i++;
-      }
-
-      //run whatever command was inside in process...
-
     }
     //printf("\n first string in command %s", cmds[0]);
     if(!strcmp(cmds[0], "set")){
@@ -203,7 +189,8 @@ void parse_command(char* cmd){
       if(cmds[i]==NULL){
         path = "";
       } else {
-        while(cmds[i]!=NULL)
+        while(cmds[i]!=NULL)    parse_command(cmd.cmdstr);
+
         {
           char* temp = cmds[i];
           if(cmds[i+1]!=NULL)
@@ -263,10 +250,7 @@ void parse_command(char* cmd){
     }
   }
 }
-
-void exec_commands_bg(char** cmds)
-{
-  printf("in exec_commands_bg\n");
+;
   pid_t mpid = fork();
   //printf("pid: %d\n", getpid());
   printf("[%d] %d\n", jc+1, getpid());
@@ -283,7 +267,7 @@ void exec_commands_bg(char** cmds)
   } else {
     //add job
     printf("\nadding job!\n");
-    Job job = {getpid(), cmds};
+    job_t job = (job_t){.pid = getpid(), .command = cmds};
     jobs[jc] = job;
     jc = jc+1;
 
@@ -410,7 +394,6 @@ int main(int argc, char** argv) {
       while(ind < MAX_BUFFER && fgets(cmdbuf[ind], 100, in))
       {
         //replace newline with null
-
         cmdbuf[ind][(int)strlen(cmdbuf[ind]-1)] = "\0";
         ind++;
       }
