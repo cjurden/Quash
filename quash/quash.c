@@ -165,7 +165,7 @@ void parse_command(char* cmd){
       ptr = strtok(NULL, " ");
       ind++;
     }
-    if(strcmp(cmds[ind-1], "&"))
+    if(!strcmp(cmds[ind-1], "&"))
     {
       //do a check for valid command
 
@@ -259,7 +259,7 @@ void execvp_commands(char** cmds)
         fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
       }
     } else {
-      waitpid(-1, &status, 0);
+      waitpid(mpid, &status, 0);
       printf("executing in parent process\n");
       exit(0);
     }
