@@ -38,6 +38,10 @@ static bool running;
 
 //for use with wait PID
 static int status;
+
+//to keeep track of background and foreground processes...
+static bool bg = false;
+
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
@@ -169,13 +173,14 @@ void parse_command(char* cmd){
     {
       //do a check for valid command
 
+      //set global background variable to true
+      bg = true;
+      printf("in the background conditional!");
       //remove the back of cmds array, this might not work, try to set to null
-      cmds[ind-1] = "";
+      cmds[ind-1] = NULL;
       pid_t pid = fork();
       //run whatever command was inside in process...
-      if (pid == 0) {
-        parse_command(cmd);
-      }
+      if(pid == 0){}
     }
     //printf("\n first string in command %s", cmds[0]);
     if(!strcmp(cmds[0], "set")){
@@ -250,15 +255,27 @@ void parse_command(char* cmd){
 void execvp_commands(char** cmds)
 {
     pid_t mpid = fork();
+    printf("pid: %d", getpid());
     if (mpid == -1){
       perror("fork");
       exit(EXIT_FAILURE);
-    } if(mpid == 0){
+    } if(mpid == 0 && !bg){
       printf("executing with execvp\n");
       if((execvp(cmds[0], cmds))<0){
         fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
       }
-    } else {
+    } else if (mpid == 0 && bg) {
+      printf("executing in background\n");
+      setpgid(0,0);
+      if((execvp(cmds[0], cmds))<0){
+        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+      }
+    } else if (bg) {
+      waitpid(-1, &status, WNOHANG);
+      bg = false;
+      exit(0);
+    }
+      else if(!bg){
       waitpid(mpid, &status, 0);
       printf("executing in parent process\n");
       exit(0);
