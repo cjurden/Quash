@@ -7,3 +7,7 @@ Quash should support (at least) two built-in variables: PATH and HOME.
 
 2-29-16
 edge cases - pipes in background
+
+
+background processes
+after you fork a process, store process id of child pids in a global array

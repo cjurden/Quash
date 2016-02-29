@@ -33,11 +33,23 @@ typedef struct command_t {
 } command_t;
 
 typedef struct {
-  int pid;
-  char* command;
+  pid_t pid;
+  char** command;
 } Job;
 
+typedef struct {
+  Container* next;
+  Container* prev;
+  int value;
+} Container;
 
+
+typedef struct {
+  Container* front;
+  Container* back;
+  Job job;
+  int size;
+} List;
 
 /**
  * Starts the main loop by setting running flag to true.
@@ -75,7 +87,7 @@ int check_for_pipe(char* cmdbuf);
 bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
 void execvp_commands(char** cmds);
-void exec_commands_bg(char* cmd);
+void exec_commands_bg(char** cmds);
 void add_job(struct Job* job);
 void remove_job(struct Job* job);
 

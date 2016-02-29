@@ -39,8 +39,8 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-static int jc = 0;
-static Job jobs[50];
+int jc = 0;
+static List jobs;
 
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
@@ -167,14 +167,13 @@ void parse_command(char* cmd){
     char* tempCmd = cmd;
     ptr = strtok(tempCmd, " ");
     int ind = 0;
-    while(ptr != NULL)
+    while(ptr != NULL && (strcmp(ptr, "&") != 0))
     {
       cmds[ind] = ptr;
-      //printf("current string: %s\n", ptr);
+      printf("current string: %s\n", ptr);
       ptr = strtok(NULL, " ");
       ind++;
     }
-
     if(bch!=NULL)
     {
       //do a check for valid command
@@ -257,10 +256,7 @@ void parse_command(char* cmd){
       printf("makign call to system with argument %s\n", cmds[0]);
       if(bg) {
         bg = false;
-        pid_t pid = fork();
-        if (pid == 0){
-          exec_commands_bg(bcmd);
-        }
+          exec_commands_bg(cmds);
       } else {
           execvp_commands(cmds);
       }
@@ -268,42 +264,46 @@ void parse_command(char* cmd){
   }
 }
 
-void exec_commands_bg(char* cmd)
+void exec_commands_bg(char** cmds)
 {
-  //add job
-  printf("\nadding job!\n");
-
-
   printf("in exec_commands_bg\n");
   pid_t mpid = fork();
   //printf("pid: %d\n", getpid());
-  Job job;
-  job.pid = getpid();
-  job.command = cmd;
-  jobs[jc] = job;
-  jc = jc+1;
-  printf("[%d] %d\n", jc+1, job.pid);
+  printf("[%d] %d\n", jc+1, getpid());
   if (mpid == -1){
     perror("fork");
     exit(EXIT_FAILURE);
+
   } else if (mpid == 0) {
     printf("executing child in background\n");
-    setpgid(0,0);
-    //execvp not execl
-    if((execl(BASH_EXEC, BASH_EXEC, "-c", cmd, (char *) 0))<0){
-      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
+    if((execvp(cmds[0], cmds))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
     }
-    //remove_job(job);
+
   } else {
-    waitpid(-1, &status, WNOHANG);
+    //add job
+    printf("\nadding job!\n");
+    Job job = {getpid(), cmds};
+    jobs[jc] = job;
+    jc = jc+1;
+
     exit(0);
   }
+}
+
+void check_jobs(){
+  for(int i = 0; i < jobs.size; i++){
+    if(waitpid(.pid, &status, WNOHANG) > 0)
+    {
+      remove_job(jobs[jc]);
+    }
+  }
+
 }
 
 void execvp_commands(char** cmds)
 {
   pid_t mpid = fork();
-  printf("pid: %d", getpid());
   if (mpid == -1){
     perror("fork");
     exit(EXIT_FAILURE);
@@ -363,7 +363,7 @@ void print_jobs(){
   printf("we have %d jobs. printing now:\n", jc);
   for(int i = 0; i < jc; i++){
     Job temp = jobs[jc];
-    printf("[%d] %d       %s\n", jc, temp.pid, temp.command);
+    printf("[%d] %d       %s\n", jc, temp.pid, temp.command[0]);
   }
 }//end print_background_processes
 
@@ -388,6 +388,7 @@ void set_env_variable(const char* var, const char* val){
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
   char* cmdbuf[30]; //< array holding individual commands to be read in
+  jobs = (List){.front = NULL, .back = NULL, .size = 0};
   start();
 
   puts("Welcome to Quash!");
