@@ -32,7 +32,7 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
-struct Job {
+typedef struct {
   int pid;
   char* command;
 } Job;
@@ -74,8 +74,8 @@ void exec_command_with_pipe(char* first, char* second);
 int check_for_pipe(char* cmdbuf);
 bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
-void execvp_commands(char** cmds, bool bg);
-
+void execvp_commands(char** cmds);
+void exec_commands_bg(char* cmd);
 void add_job(struct Job* job);
 void remove_job(struct Job* job);
 

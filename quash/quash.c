@@ -40,7 +40,7 @@ static int status;
 
 //to keeep track of background and foreground processes...
 static int jc = 0;
-static struct Job* jobs[50];
+static Job jobs[50];
 
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
@@ -94,32 +94,13 @@ bool get_command(command_t* cmd, FILE* in) {
 * keep track of PID
 */
 
-void add_job(struct Job* job){
-  jobs[jc] = job;
-  jc++;
-  printf("added job %s to index %d with pid %d\n", job->command, jc, job->pid);
-}
-
-//NOTE: need to work on this part
-void remove_job(struct Job* job){
-  for(int i = 0; i < jc; i++){
-    if(jobs[jc]->pid == job->pid){
-      jobs[jc] = NULL;
-    }
-    jc--;
-    //limit is fifty because that is the size of the array...
-    for(int i = 0; i < 50; i ++){
-      struct Job* temp = jobs;
-    }
-  }
-}
-
 void parse_command(char* cmd){
   bool bg = false;
   //CHECK FOR PIPE
   char* pch;
   char* ich;
   char* bch;
+  char* bcmd = cmd;
   bch = strchr(cmd, '&');
   pch = strchr(cmd,'|');
   ich = strchr(cmd, '>');
@@ -189,7 +170,7 @@ void parse_command(char* cmd){
     while(ptr != NULL)
     {
       cmds[ind] = ptr;
-      printf("current string: %s\n", ptr);
+      //printf("current string: %s\n", ptr);
       ptr = strtok(NULL, " ");
       ind++;
     }
@@ -198,9 +179,9 @@ void parse_command(char* cmd){
     {
       //do a check for valid command
 
-      //set global background variable to true
-      bg = true;
+
       printf("in the background conditional!\n");
+      bg = true;
       //remove the back of cmds array, this might not work, try to set to null
       int i = 0;
       printf("this is at the end! %s\n", cmds[ind]);
@@ -209,6 +190,7 @@ void parse_command(char* cmd){
         printf("%s\n", cmds[i]);
         i++;
       }
+
       //run whatever command was inside in process...
 
     }
@@ -260,7 +242,7 @@ void parse_command(char* cmd){
       {
         print_working_directory();
       } else {
-        execvp_commands(cmds, bg);
+        execvp_commands(cmds);
       }
     }else if(!strcmp(cmds[0], "quit")){
       terminate();
@@ -273,72 +255,67 @@ void parse_command(char* cmd){
     } else {
       printf("we are here!\n");
       printf("makign call to system with argument %s\n", cmds[0]);
-      pid_t pid = fork();
-      if (pid == 0){
-        execvp_commands(cmds, bg);
+      if(bg) {
+        bg = false;
+        pid_t pid = fork();
+        if (pid == 0){
+          exec_commands_bg(bcmd);
+        }
+      } else {
+          execvp_commands(cmds);
       }
     }
   }
 }
 
-
-void execvp_commands(char** cmds, bool bg)
+void exec_commands_bg(char* cmd)
 {
-  if(bg){
-    //add job
-    printf("\nadding job!\n");
-    char strc[100] = {NULL};
-    int i = 0;
-    char** tempc = cmds;
-    while(strcmp(tempc[i], "&")!=0)
-    {
-      printf("%s", tempc[i]);
-      strcat(tempc[i], " ");
-      strcat(strc, tempc[i]);
-      printf("making command for this job. current command: %s\n", strc);
-      i++;
-    }
-    printf("final command %s", strc);
-    struct Job* job = malloc(sizeof *job);
-    job->command = strc;
-    printf("in execvp bg, background variable = %d\n", bg);
-    bg = false;
-    pid_t mpid = fork();
-    //printf("pid: %d\n", getpid());
-    job->pid = getpid();
-    printf("[%d] %d\n", jc+1, job->pid);
-    add_job(job);
-    if (mpid == -1){
-      perror("fork");
-      exit(EXIT_FAILURE);
-    } else if (mpid == 0) {
-      printf("executing child in background\n");
-      setpgid(0,0);
-      if((execl(BASH_EXEC, BASH_EXEC, "-c", strc, (char *) 0))<0){
-        fprintf(stderr, "\nError executing %s. ERROR#%d\n", strc, errno);
-      }
-      //remove_job(job);
-    } else {
-      waitpid(-1, &status, WNOHANG);
-      exit(0);
-    }
+  //add job
+  printf("\nadding job!\n");
 
-  } else {
-    pid_t mpid = fork();
-    printf("pid: %d", getpid());
-    if (mpid == -1){
-      perror("fork");
-      exit(EXIT_FAILURE);
-    } if(mpid == 0){
-      printf("executing with execvp\n");
-      if((execvp(cmds[0], cmds))<0){
-        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
-      }
-    } else {
-      waitpid(mpid, &status, 0);
-      printf("executing in parent process\n");
-      exit(0);
+
+  printf("in exec_commands_bg\n");
+  pid_t mpid = fork();
+  //printf("pid: %d\n", getpid());
+  Job job;
+  job.pid = getpid();
+  job.command = cmd;
+  jobs[jc] = job;
+  jc = jc+1;
+  printf("[%d] %d\n", jc+1, job.pid);
+  if (mpid == -1){
+    perror("fork");
+    exit(EXIT_FAILURE);
+  } else if (mpid == 0) {
+    printf("executing child in background\n");
+    setpgid(0,0);
+    //execvp not execl
+    if((execl(BASH_EXEC, BASH_EXEC, "-c", cmd, (char *) 0))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmd, errno);
     }
+    //remove_job(job);
+  } else {
+    waitpid(-1, &status, WNOHANG);
+    exit(0);
+  }
+}
+
+void execvp_commands(char** cmds)
+{
+  pid_t mpid = fork();
+  printf("pid: %d", getpid());
+  if (mpid == -1){
+    perror("fork");
+    exit(EXIT_FAILURE);
+  } if(mpid == 0){
+    printf("executing with execvp\n");
+    if((execvp(cmds[0], cmds))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+    }
+  } else {
+    waitpid(mpid, &status, 0);
+    printf("executing in parent process\n");
+    exit(0);
   }
 }
 
@@ -385,8 +362,8 @@ void execute_echo(const char* path_to_echo){
 void print_jobs(){
   printf("we have %d jobs. printing now:\n", jc);
   for(int i = 0; i < jc; i++){
-    struct Job* temp = jobs[jc];
-    printf("[%d] %d       %s\n", jc, temp->pid, temp->command);
+    Job temp = jobs[jc];
+    printf("[%d] %d       %s\n", jc, temp.pid, temp.command);
   }
 }//end print_background_processes
 

@@ -2,7 +2,7 @@ STUDENTID = XXXXXXX
 PROGNAME = quash
 
 CC = gcc --std=c99
-CFLAGS = -Wall -g -Og
+CFLAGS = -Wall -g #-Og
 
 # Add files to their respective line to get this makefile to build them
 CFILES = quash.c
