@@ -3,3 +3,11 @@ Quash should support (at least) two built-in variables: PATH and HOME.
 -Do we need to fully comment everything to generate doxygen documentation?
 -Can you just scroll through array and combine all arguments?
 -Do we need to include all flags for cd and other calls?
+
+
+2-29-16
+edge cases - pipes in background
+
+
+background processes
+after you fork a process, store process id of child pids in a global array

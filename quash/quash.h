@@ -12,7 +12,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
-
+#include <sys/wait.h>
+#include <sys/types.h>
 /**
  * Specify the maximum number of characters accepted by the command string
  */
@@ -32,6 +33,10 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
+typedef struct job_t{
+  pid_t pid;
+  char* command;
+} job_t;
 
 /**
  * Starts the main loop by setting running flag to true.
@@ -69,6 +74,10 @@ int check_for_pipe(char* cmdbuf);
 bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
 void execvp_commands(char** cmds);
+void exec_commands_bg(char** cmds);
+void add_job(struct Job* job);
+void remove_job(struct Job* job);
+
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.

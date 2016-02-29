@@ -10,7 +10,6 @@
 #include "quash.h" // Putting this above the other includes allows us to ensure
                    // this file's headder's #include statements are self
                    // contained.
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,6 +19,8 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define MAX_BUFFER 1024
 #define VALID_COMMAND_LENGTH 7
@@ -35,6 +36,15 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
+
+//for use with wait PID
+static int status;
+
+//to keeep track of background and foreground processes...
+int jc = 0;
+static job_t jobs[50];
+
+
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
@@ -85,17 +95,20 @@ bool get_command(command_t* cmd, FILE* in) {
 * cmd1[], cmd2[], cmdall[][] where cmd all holds all commands, and removes the front one after execution.
 * keep track of PID
 */
-void parse_command(char* cmd){
 
+void parse_command(char* cmd){
+  check_jobs();
+  bool bg = false;
   //CHECK FOR PIPE
   char* pch;
   char* ich;
+  char* bch;
+  char* och;
+  char* bcmd = cmd;
+  bch = strchr(cmd, '&');
   pch = strchr(cmd,'|');
-  ich = strchr(cmd, '>');
-  if(ich!=NULL)
-  {
-
-  }
+  ich = strchr(cmd, '<');
+  och = strchr(cmd, '>');
   if(pch!=NULL)
   {
     //then we have a pipe character, need to split the commands and then execute
@@ -155,24 +168,60 @@ void parse_command(char* cmd){
     char* tempCmd = cmd;
     ptr = strtok(tempCmd, " ");
     int ind = 0;
-    while(ptr != NULL)
+    while(ptr != NULL && (strcmp(ptr, "&") != 0))
     {
       cmds[ind] = ptr;
-      printf("current string: %s\n", ptr);
+    //  printf("current string: %s\n", ptr);
       ptr = strtok(NULL, " ");
       ind++;
     }
-    if(strcmp(cmds[ind-1], "&"))
+    if(bch!=NULL)
     {
       //do a check for valid command
-      //remove the back of cmds array
-      pid_t pid = fork();
+
+
+      printf("in the background conditional!\n");
+      bg = true;
       //run whatever command was inside in process...
-      if (pid == 0) {
-        parse_command(cmds);
-      }
+
     }
     //printf("\n first string in command %s", cmds[0]);
+    if(ich!=NULL)
+    {
+      int ind = -1;
+      int i = 0;
+      while(cmds[i]!=NULL){
+        if(!strcmp(cmds[i], "<")){
+          ind = i;
+        }
+      }
+      int in = fopen(cmds[ind+1], O_RDONLY);
+      dup2(in, STDIN_FILENO);
+      close(in);
+    }
+    if(och!=NULL)
+    {
+      int ind = -1;
+      int i = 0;
+      while(cmds[i]!=NULL){
+        if(!strcmp(cmds[i], ">")){
+          ind = i;
+        }
+      }
+      char* temp = cmd;
+      pid_t pid = fork();
+      if(pid == 0){
+        char* wrcmd = strtok(cmd, ">");
+        printf("%s", wrcmd);
+        int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
+        dup2(out, STDOUT_FILENO);
+        parse_command(wrcmd);
+        close(out);
+      } else {
+          waitpid(pid, &status, 0);
+      }
+
+    }
     if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
@@ -227,28 +276,79 @@ void parse_command(char* cmd){
     }else if(!strcmp(cmds[0], "exit")){
       terminate();
     }else if(!strcmp(cmds[0], "jobs")){
-
+      print_jobs();
     }else if(!strcmp(cmds[0], "")){
       //just want this to continue while doing nothing...
     } else {
       printf("we are here!\n");
       printf("makign call to system with argument %s\n", cmds[0]);
-      pid_t pid = fork();
-      if (pid == 0){
-      execvp_commands(cmds);
+      if(bg) {
+        bg = false;
+          exec_commands_bg(cmds);
+      } else {
+          execvp_commands(cmds);
       }
     }
   }
 }
 
+void exec_commands_bg(char** cmds)
+{
+  printf("in exec_commands_bg\n");
+  pid_t mpid = fork();
+  //printf("pid: %d\n", getpid());
+
+  if (mpid == -1){
+    perror("fork");
+    exit(EXIT_FAILURE);
+
+  } else if (mpid == 0) {
+    printf("executing child in background\n");
+    if((execvp(cmds[0], cmds))<0){
+      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+    }
+
+  } else {
+    //add job
+    printf("\nadding job!\n");
+    job_t job = (job_t){.pid = getpid(), .command=cmds[0]};
+    jobs[jc] = job;
+    jc = jc+1;
+    printf("[%d] %d\n", jc+1, jobs[jc-1].pid);
+    printf("%d\n", jobs[jc-1].pid);
+    //exit(0);
+  }
+}
+
+
+void check_jobs(){
+  for(int i = 0; i < jc; i++){
+    if(waitpid(jobs[jc].pid, &status, WNOHANG) > 0)
+    {
+      printf("[%d] Done            %s\n\n", i, jobs[i].command[0]);
+      //remove_job(jobs[jc]);
+    }
+  }
+}
 
 void execvp_commands(char** cmds)
 {
+  pid_t mpid = fork();
+  if (mpid == -1){
+    perror("fork");
+    exit(EXIT_FAILURE);
+  } if(mpid == 0){
     printf("executing with execvp\n");
     if((execvp(cmds[0], cmds))<0){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
     }
+  } else {
+    waitpid(mpid, &status, 0);
+    printf("executing in parent process\n");
+    //exit(0);
+  }
 }
+
 
 
 //-------------EXECUTION METHODS ------------------//
@@ -290,7 +390,11 @@ void execute_echo(const char* path_to_echo){
 }//end echo
 
 void print_jobs(){
-
+  printf("we have %d jobs. printing now:\n", jc);
+  for(int i = 0; i < jc; i++){
+    job_t temp = jobs[i];
+    printf("[%d] %d       %s\n", jc, temp.pid, temp.command[0]);
+  }
 }//end print_background_processes
 
 void set_env_variable(const char* var, const char* val){
@@ -313,7 +417,7 @@ void set_env_variable(const char* var, const char* val){
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-  char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
+  char* cmdbuf[30]; //< array holding individual commands to be read in
   start();
 
   puts("Welcome to Quash!");
@@ -321,6 +425,31 @@ int main(int argc, char** argv) {
 
   //check main argv to see if there are additional arguments to quash like a file to read commands from
   // Main execution loop
+  if(argv[1] != NULL){
+    if(strcmp(argv[1], "<")){
+      printf("recognized command file. filename: %s\n", argv[2]);
+      FILE* in = fopen(argv[2], "r");
+
+      if(in == 0)
+      {
+        printf("error!");
+        exit(1);
+      }
+      int ind = 0;
+      while(ind < MAX_BUFFER && fgets(cmdbuf[ind], 100, in))
+      {
+        //replace newline with null
+
+        cmdbuf[ind][(int)strlen(cmdbuf[ind]-1)] = "\0";
+        ind++;
+      }
+      fclose(in);
+      for(int i = 0; i < ind; i++)
+      {
+        parse_command(cmdbuf[i]);
+      }
+    }
+  }
   while (is_running() && get_command(&cmd, stdin)) {
     parse_command(cmd.cmdstr);
    }//end while
