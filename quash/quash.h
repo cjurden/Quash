@@ -35,7 +35,7 @@ typedef struct command_t {
 
 typedef struct job_t{
   pid_t pid;
-  char** command;
+  char* command;
 } job_t;
 
 /**

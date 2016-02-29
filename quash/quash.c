@@ -311,7 +311,7 @@ void exec_commands_bg(char** cmds)
   } else {
     //add job
     printf("\nadding job!\n");
-    job_t job = (job_t){.pid = getpid(), .command=cmds};
+    job_t job = (job_t){.pid = getpid(), .command=cmds[0]};
     jobs[jc] = job;
     jc = jc+1;
     printf("[%d] %d\n", jc+1, jobs[jc-1].pid);
@@ -392,7 +392,7 @@ void execute_echo(const char* path_to_echo){
 void print_jobs(){
   printf("we have %d jobs. printing now:\n", jc);
   for(int i = 0; i < jc; i++){
-    job_t temp = jobs[jc];
+    job_t temp = jobs[i];
     printf("[%d] %d       %s\n", jc, temp.pid, temp.command[0]);
   }
 }//end print_background_processes
