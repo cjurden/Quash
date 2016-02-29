@@ -39,7 +39,6 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-int jc = 0;
 static List jobs;
 
 
@@ -95,6 +94,7 @@ bool get_command(command_t* cmd, FILE* in) {
 */
 
 void parse_command(char* cmd){
+  check_jobs();
   bool bg = false;
   //CHECK FOR PIPE
   char* pch;
@@ -174,26 +174,15 @@ void parse_command(char* cmd){
       ptr = strtok(NULL, " ");
       ind++;
     }
+
+    //indicates a background command
     if(bch!=NULL)
     {
-      //do a check for valid command
-
-
       printf("in the background conditional!\n");
       bg = true;
-      //remove the back of cmds array, this might not work, try to set to null
-      int i = 0;
-      printf("this is at the end! %s\n", cmds[ind]);
-      while(cmds[i] != NULL)
-      {
-        printf("%s\n", cmds[i]);
-        i++;
-      }
-
-      //run whatever command was inside in process...
-
     }
-    //printf("\n first string in command %s", cmds[0]);
+
+
     if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
@@ -236,6 +225,7 @@ void parse_command(char* cmd){
       }
       printf("path: %s\n", path);
       change_directory(path);
+
     }else if(!strcmp(cmds[0], "pwd")){
       if(cmds[1]==NULL)
       {
@@ -243,22 +233,26 @@ void parse_command(char* cmd){
       } else {
         execvp_commands(cmds);
       }
+
     }else if(!strcmp(cmds[0], "quit")){
       terminate();
+
     }else if(!strcmp(cmds[0], "exit")){
       terminate();
+
     }else if(!strcmp(cmds[0], "jobs")){
       print_jobs();
+
     }else if(!strcmp(cmds[0], "")){
       //just want this to continue while doing nothing...
     } else {
-      printf("we are here!\n");
+      printf("we are past all conditionals\n");
       printf("makign call to system with argument %s\n", cmds[0]);
       if(bg) {
         bg = false;
-          exec_commands_bg(cmds);
+        exec_commands_bg(cmds);
       } else {
-          execvp_commands(cmds);
+        execvp_commands(cmds);
       }
     }
   }
@@ -283,19 +277,20 @@ void exec_commands_bg(char** cmds)
   } else {
     //add job
     printf("\nadding job!\n");
-    Job job = {getpid(), cmds};
-    jobs[jc] = job;
-    jc = jc+1;
+    Job job = (Job){.pid = getpid(), .command = cmds};
+    add_job(job);
 
-    exit(0);
+    //exit(0);
   }
 }
 
 void check_jobs(){
+  Container* temp = jobs.front;
   for(int i = 0; i < jobs.size; i++){
-    if(waitpid(.pid, &status, WNOHANG) > 0)
+    if(waitpid(temp->job.pid, &status, WNOHANG) > 0)
     {
-      remove_job(jobs[jc]);
+      printf("[%d] Done       %s", i, temp->job.command[0]);
+      //remove_job(temp);
     }
   }
 
@@ -315,7 +310,7 @@ void execvp_commands(char** cmds)
   } else {
     waitpid(mpid, &status, 0);
     printf("executing in parent process\n");
-    exit(0);
+    //exit(0);
   }
 }
 
@@ -360,10 +355,11 @@ void execute_echo(const char* path_to_echo){
 }//end echo
 
 void print_jobs(){
-  printf("we have %d jobs. printing now:\n", jc);
-  for(int i = 0; i < jc; i++){
-    Job temp = jobs[jc];
-    printf("[%d] %d       %s\n", jc, temp.pid, temp.command[0]);
+  printf("we have %d jobs. printing now:\n", jobs.size);
+  for(int i = 0; i < jobs.size; i++){
+    Container* temp = jobs.front;
+    printf("[%d] %d       %s\n", i, temp->job.pid, temp->job.command[0]);
+    temp = temp->next;
   }
 }//end print_background_processes
 
@@ -378,6 +374,21 @@ void set_env_variable(const char* var, const char* val){
     }
 }
 
+/**********************************************************************/
+/*******************  LIST COMMANDS ***********************************/
+/**********************************************************************/
+void add_job(Job job){
+  Container* temp = (Container*){->next = NULL, ->prev = NULL, ->job = job};
+  if(jobs.size == 0){
+    jobs.front = temp;
+    jobs.back = jobs.front;
+  } else {
+    jobs.back->next = temp;
+    temp->prev = jobs.back;
+    jobs.back = temp;
+  }
+  jobs.size ++;
+}
 /**
  * Quash entry point
  *

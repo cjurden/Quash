@@ -7,11 +7,14 @@
 #ifndef QUASH_H
 #define QUASH_H
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <unistd.h>
+#include <strings.h>
+#include <string.h>
 #include <errno.h>
+
 
 /**
  * Specify the maximum number of characters accepted by the command string
@@ -32,22 +35,22 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
-typedef struct {
+typedef struct Job {
   pid_t pid;
   char** command;
 } Job;
 
-typedef struct {
-  Container* next;
-  Container* prev;
-  int value;
+typedef struct Container {
+  struct Container* next;
+  struct Container* prev;
+  Job job;
 } Container;
 
 
-typedef struct {
-  Container* front;
-  Container* back;
-  Job job;
+typedef struct List {
+  struct Container* front;
+  struct Container* back;
+  struct Job job;
   int size;
 } List;
 
@@ -88,8 +91,8 @@ bool in_cmd_set(char* input);
 void join(char** cmdbuf, char* buf);
 void execvp_commands(char** cmds);
 void exec_commands_bg(char** cmds);
-void add_job(struct Job* job);
-void remove_job(struct Job* job);
+void add_job(Job job);
+void remove_job(Container* job);
 
 /**
  * Change the working directory to the path specified.
