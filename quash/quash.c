@@ -35,6 +35,9 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
+
+//for use with wait PID
+static int status;
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
 /**************************************************************************
@@ -165,11 +168,13 @@ void parse_command(char* cmd){
     if(strcmp(cmds[ind-1], "&"))
     {
       //do a check for valid command
-      //remove the back of cmds array
+
+      //remove the back of cmds array, this might not work, try to set to null
+      cmds[ind-1] = "";
       pid_t pid = fork();
       //run whatever command was inside in process...
       if (pid == 0) {
-        parse_command(cmds);
+        parse_command(cmd);
       }
     }
     //printf("\n first string in command %s", cmds[0]);
@@ -244,9 +249,19 @@ void parse_command(char* cmd){
 
 void execvp_commands(char** cmds)
 {
-    printf("executing with execvp\n");
-    if((execvp(cmds[0], cmds))<0){
-      fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+    pid_t mpid = fork();
+    if (mpid == -1){
+      perror("fork");
+      exit(EXIT_FAILURE);
+    } if(mpid == 0){
+      printf("executing with execvp\n");
+      if((execvp(cmds[0], cmds))<0){
+        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+      }
+    } else {
+      waitpid(-1, &status, 0);
+      printf("executing in parent process\n");
+      exit(0);
     }
 }
 
