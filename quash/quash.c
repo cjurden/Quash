@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define MAX_BUFFER 1024
 #define VALID_COMMAND_LENGTH 7
@@ -101,14 +103,12 @@ void parse_command(char* cmd){
   char* pch;
   char* ich;
   char* bch;
+  char* och;
   char* bcmd = cmd;
   bch = strchr(cmd, '&');
   pch = strchr(cmd,'|');
-  ich = strchr(cmd, '>');
-  if(ich!=NULL)
-  {
-
-  }
+  ich = strchr(cmd, '<');
+  och = strchr(cmd, '>');
   if(pch!=NULL)
   {
     //then we have a pipe character, need to split the commands and then execute
@@ -186,6 +186,42 @@ void parse_command(char* cmd){
 
     }
     //printf("\n first string in command %s", cmds[0]);
+    if(ich!=NULL)
+    {
+      int ind = -1;
+      int i = 0;
+      while(cmds[i]!=NULL){
+        if(!strcmp(cmds[i], "<")){
+          ind = i;
+        }
+      }
+      int in = fopen(cmds[ind+1], O_RDONLY);
+      dup2(in, STDIN_FILENO);
+      close(in);
+    }
+    if(och!=NULL)
+    {
+      int ind = -1;
+      int i = 0;
+      while(cmds[i]!=NULL){
+        if(!strcmp(cmds[i], ">")){
+          ind = i;
+        }
+      }
+      char* temp = cmd;
+      pid_t pid = fork();
+      if(pid == 0){
+        char* wrcmd = strtok(cmd, ">");
+        printf("%s", wrcmd);
+        int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
+        dup2(out, STDOUT_FILENO);
+        parse_command(wrcmd);
+        close(out);
+      } else {
+          waitpid(pid, &status, 0);
+      }
+
+    }
     if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
