@@ -10,7 +10,6 @@
 #include "quash.h" // Putting this above the other includes allows us to ensure
                    // this file's headder's #include statements are self
                    // contained.
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,7 +39,9 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-static bool bg = false;
+static int jc = 0;
+static struct Job* jobs[50];
+
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
 
@@ -92,8 +93,29 @@ bool get_command(command_t* cmd, FILE* in) {
 * cmd1[], cmd2[], cmdall[][] where cmd all holds all commands, and removes the front one after execution.
 * keep track of PID
 */
-void parse_command(char* cmd){
 
+void add_job(struct Job* job){
+  jobs[jc] = job;
+  jc++;
+  printf("added job %s to index %d with pid %d\n", job->command, jc, job->pid);
+}
+
+//NOTE: need to work on this part
+void remove_job(struct Job* job){
+  for(int i = 0; i < jc; i++){
+    if(jobs[jc]->pid == job->pid){
+      jobs[jc] = NULL;
+    }
+    jc--;
+    //limit is fifty because that is the size of the array...
+    for(int i = 0; i < 50; i ++){
+      struct Job* temp = jobs;
+    }
+  }
+}
+
+void parse_command(char* cmd){
+  bool bg = false;
   //CHECK FOR PIPE
   char* pch;
   char* ich;
@@ -178,9 +200,9 @@ void parse_command(char* cmd){
       printf("in the background conditional!");
       //remove the back of cmds array, this might not work, try to set to null
       cmds[ind-1] = NULL;
-      pid_t pid = fork();
+
       //run whatever command was inside in process...
-      if(pid == 0){}
+
     }
     //printf("\n first string in command %s", cmds[0]);
     if(!strcmp(cmds[0], "set")){
@@ -230,14 +252,18 @@ void parse_command(char* cmd){
       {
         print_working_directory();
       } else {
-        execvp_commands(cmds);
+        execvp_commands(cmds, bg);
       }
     }else if(!strcmp(cmds[0], "quit")){
       terminate();
     }else if(!strcmp(cmds[0], "exit")){
       terminate();
     }else if(!strcmp(cmds[0], "jobs")){
-
+      printf("we have %d jobs. printing now:\n", jc);
+      for(int i = 0; i < jc; i++){
+        struct Job* temp = jobs[jc];
+        printf("[%d] %d       %s\n", jc, temp->pid, temp->command);
+      }
     }else if(!strcmp(cmds[0], "")){
       //just want this to continue while doing nothing...
     } else {
@@ -245,42 +271,78 @@ void parse_command(char* cmd){
       printf("makign call to system with argument %s\n", cmds[0]);
       pid_t pid = fork();
       if (pid == 0){
-      execvp_commands(cmds);
+      execvp_commands(cmds, bg);
       }
     }
   }
 }
 
 
-void execvp_commands(char** cmds)
+void execvp_commands(char** cmds, bool bg)
 {
+  if(bg){
+    //add job
+    printf("\nadding job!\n");
+    char cmd[100];
+    int i = 0;
+
+    //this doesnt work! fuck! not conjoining the strings correctly.
+    while(cmds[i]!=NULL)
+    {
+      char* temp = cmds[i];
+      if(cmds[i+1]!=NULL)
+      {
+        strcat(temp, " ");
+        strcat(cmd, temp);
+      }
+      strcat(cmd, temp);
+      i++;
+    }
+    struct Job* job = malloc(sizeof *job);
+    job->command = cmd;
+    printf("new job command: %s\n", job->command);
+
+    printf("in execvp bg, background variable = %d\n", bg);
+    bg = false;
+    pid_t mpid = fork();
+    //printf("pid: %d\n", getpid());
+    job->pid = getpid();
+    printf("new job pid: %d\n", job->pid);
+    add_job(job);
+    if (mpid == -1){
+      perror("fork");
+      exit(EXIT_FAILURE);
+    } else if (mpid == 0) {
+      printf("executing child in background\n");
+      setpgid(0,0);
+      if((execvp(cmds[0], cmds))<0){
+        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+      }
+      //remove_job(job);
+    } else {
+      waitpid(-1, &status, WNOHANG);
+      exit(0);
+    }
+
+  } else {
     pid_t mpid = fork();
     printf("pid: %d", getpid());
     if (mpid == -1){
       perror("fork");
       exit(EXIT_FAILURE);
-    } if(mpid == 0 && !bg){
+    } if(mpid == 0){
       printf("executing with execvp\n");
       if((execvp(cmds[0], cmds))<0){
         fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
       }
-    } else if (mpid == 0 && bg) {
-      printf("executing in background\n");
-      setpgid(0,0);
-      if((execvp(cmds[0], cmds))<0){
-        fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
-      }
-    } else if (bg) {
-      waitpid(-1, &status, WNOHANG);
-      bg = false;
-      exit(0);
-    }
-      else if(!bg){
+    } else {
       waitpid(mpid, &status, 0);
       printf("executing in parent process\n");
       exit(0);
     }
+  }
 }
+
 
 
 //-------------EXECUTION METHODS ------------------//
@@ -353,6 +415,9 @@ int main(int argc, char** argv) {
 
   //check main argv to see if there are additional arguments to quash like a file to read commands from
   // Main execution loop
+  if(strcmp(argv[1], "<")){
+    
+  }
   while (is_running() && get_command(&cmd, stdin)) {
     parse_command(cmd.cmdstr);
    }//end while
