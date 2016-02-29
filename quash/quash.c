@@ -407,7 +407,7 @@ void set_env_variable(const char* var, const char* val){
  */
 int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
-  char* cmdbuf[MAX_BUFFER]; //< array holding individual commands
+  char* cmdbuf[30]; //< array holding individual commands to be read in
   start();
 
   puts("Welcome to Quash!");
@@ -416,7 +416,26 @@ int main(int argc, char** argv) {
   //check main argv to see if there are additional arguments to quash like a file to read commands from
   // Main execution loop
   if(strcmp(argv[1], "<")){
-    
+    printf("recognized command file. filename: %s\n", argv[2]);
+    FILE* in = fopen(argv[2], "r");
+
+    if(in == 0)
+    {
+      printf("error!");
+      exit(1);
+    }
+    int ind = 0;
+    while(ind < MAX_BUFFER && fgets(cmdbuf[ind], 100, in))
+    {
+      //replace newline with null
+      cmdbuf[ind][strlen(cmdbuf[ind]-1)] = "\0";
+      ind++;
+    }
+    fclose(in);
+    for(int i = 0; i < ind; i++)
+    {
+      parse_command(cmdbuf[i]);
+    }
   }
   while (is_running() && get_command(&cmd, stdin)) {
     parse_command(cmd.cmdstr);
