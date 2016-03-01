@@ -36,8 +36,21 @@ typedef struct command_t {
 typedef struct job_t{
   pid_t pid;
   char* command;
-} job_t;
+};
 
+/*
+typedef struct node_t {
+  struct node_t *next;
+  struct node_t *prev;
+  struct job_t *job;
+} node_t;
+
+typedef struct list_t {
+  node_t *front;
+  node_t *back;
+  int size;
+} list_t;
+*/
 /**
  * Starts the main loop by setting running flag to true.
  */
@@ -77,7 +90,7 @@ void execvp_commands(char** cmds);
 void exec_commands_bg(char** cmds);
 void add_job(struct Job* job);
 void remove_job(struct Job* job);
-
+void check_jobs();
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.

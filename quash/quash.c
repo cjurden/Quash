@@ -41,8 +41,8 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-int jc = 0;
-static job_t jobs[50];
+static int jc = 0;
+static struct job_t jobs[50];
 
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
@@ -97,14 +97,17 @@ bool get_command(command_t* cmd, FILE* in) {
 */
 
 void parse_command(char* cmd){
-  check_jobs();
   bool bg = false;
+  char* outc[100], outbg[100];
+  strcpy(outc, cmd);
+  strcpy(outbg, cmd);
   //CHECK FOR PIPE
   char* pch;
   char* ich;
   char* bch;
   char* och;
-  char* bcmd = cmd;
+  char* bcmd[100];
+  strcpy(bcmd, cmd);
   bch = strchr(cmd, '&');
   pch = strchr(cmd,'|');
   ich = strchr(cmd, '<');
@@ -165,7 +168,8 @@ void parse_command(char* cmd){
     //NO PIPE
     char* ptr;
     char* cmds[100] = {NULL};
-    char* tempCmd = cmd;
+    char* tempCmd[100];
+    strcpy(tempCmd, cmd);
     ptr = strtok(tempCmd, " ");
     int ind = 0;
     while(ptr != NULL && (strcmp(ptr, "&") != 0))
@@ -175,27 +179,54 @@ void parse_command(char* cmd){
       ptr = strtok(NULL, " ");
       ind++;
     }
+
+    //background command
     if(bch!=NULL)
     {
       //do a check for valid command
-
-
-      printf("in the background conditional!\n");
       bg = true;
-      //run whatever command was inside in process...
+      char* temp;
+      temp = strtok(bcmd, "&");
+      pid_t mpid = fork();
+      if (mpid == -1){
+        perror("fork");
+        exit(EXIT_FAILURE);
+
+      } else if (mpid == 0) {
+        printf("executing child in background\n");
+        printf("\nadding job!\n");
+        int jobid = jc;
+        parse_command(temp);
+        printf("[%d] %d  finished COMMAND \n", jobid, getpid());
+
+      } else {
+        //parent process of mpid
+        jobs[jc].pid = mpid;
+        jobs[jc].command=cmds[0];
+        printf("[%d] %d   %s\n", jc, jobs[jc].pid, jobs[jc].command);
+        jc++;
+        if(waitpid(mpid,&status,WNOHANG) > 0)
+        {
+          printf("[%d] Done          ", getpid());
+        }
+        //exit(0);
+      }
 
     }
     //printf("\n first string in command %s", cmds[0]);
-    if(ich!=NULL)
+    else if(ich!=NULL)
     {
       int ind = -1;
       int i = 0;
+      //ssize_t
+      char buffer[MAX_BUFFER];
       while(cmds[i]!=NULL){
         if(!strcmp(cmds[i], "<")){
           ind = i;
         }
       }
-      int in = fopen(cmds[ind+1], O_RDONLY);
+      int in = open(cmds[ind+1], O_RDONLY);
+      int size = read(in, buffer, MAX_BUFFER);
       dup2(in, STDIN_FILENO);
       close(in);
     }
@@ -208,10 +239,9 @@ void parse_command(char* cmd){
           ind = i;
         }
       }
-      char* temp = cmd;
       pid_t pid = fork();
       if(pid == 0){
-        char* wrcmd = strtok(cmd, ">");
+        char* wrcmd = strtok(outc, ">");
         printf("%s", wrcmd);
         int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
         dup2(out, STDOUT_FILENO);
@@ -222,7 +252,7 @@ void parse_command(char* cmd){
       }
 
     }
-    if(!strcmp(cmds[0], "set")){
+    else if(!strcmp(cmds[0], "set")){
 
     }else if(!strcmp(cmds[0], "echo")){
       /*
@@ -249,21 +279,10 @@ void parse_command(char* cmd){
       printf("in cd, second argument: %s\n", cmds[1]);
       if(cmds[i]==NULL){
         sprintf(path, "%s", getenv("HOME"));
+        change_directory(path);
       } else {
-        while(cmds[i]!=NULL)
-        {
-          char* temp = cmds[i];
-          if(cmds[i+1]!=NULL)
-          {
-            strcat(temp, " ");
-            strcat(path, temp);
-          }
-          strcat(path, temp);
-          i++;
-        }
+        change_directory(cmds[1]);
       }
-      printf("path: %s\n", path);
-      change_directory(path);
     }else if(!strcmp(cmds[0], "pwd")){
       if(cmds[1]==NULL)
       {
@@ -280,11 +299,9 @@ void parse_command(char* cmd){
     }else if(!strcmp(cmds[0], "")){
       //just want this to continue while doing nothing...
     } else {
-      printf("we are here!\n");
-      printf("makign call to system with argument %s\n", cmds[0]);
       if(bg) {
         bg = false;
-          exec_commands_bg(cmds);
+          //exec_commands_bg(cmds);
       } else {
           execvp_commands(cmds);
       }
@@ -294,10 +311,8 @@ void parse_command(char* cmd){
 
 void exec_commands_bg(char** cmds)
 {
-  printf("in exec_commands_bg\n");
+/*
   pid_t mpid = fork();
-  //printf("pid: %d\n", getpid());
-
   if (mpid == -1){
     perror("fork");
     exit(EXIT_FAILURE);
@@ -307,25 +322,28 @@ void exec_commands_bg(char** cmds)
     if((execvp(cmds[0], cmds))<0){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
     }
-
+    printf("finished executing %d\n", getpid());
   } else {
     //add job
     printf("\nadding job!\n");
     job_t job = (job_t){.pid = getpid(), .command=cmds[0]};
     jobs[jc] = job;
     jc = jc+1;
-    printf("[%d] %d\n", jc+1, jobs[jc-1].pid);
-    printf("%d\n", jobs[jc-1].pid);
+    printf("[%d] %d\n", jc-1, jobs[jc-1].pid);
+    while(waitpid(-1, NULL, WNOHANG) > 0){
+      printf("[%d] Done", getpid());
+    }
     //exit(0);
   }
+  */
 }
 
 
 void check_jobs(){
   for(int i = 0; i < jc; i++){
-    if(waitpid(jobs[jc].pid, &status, WNOHANG) > 0)
+    if(waitpid(jobs[i].pid, &status, WNOHANG) > 0)
     {
-      printf("[%d] Done            %s\n\n", i, jobs[i].command[0]);
+      printf("[%d] Done            %s\n\n", i, jobs[i].command);
       //remove_job(jobs[jc]);
     }
   }
@@ -342,9 +360,11 @@ void execvp_commands(char** cmds)
     if((execvp(cmds[0], cmds))<0){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
     }
+    printf("done executing %d", getpid());
   } else {
     waitpid(mpid, &status, 0);
-    printf("executing in parent process\n");
+    check_jobs();
+    printf("back in parent process\n");
     //exit(0);
   }
 }
@@ -391,9 +411,9 @@ void execute_echo(const char* path_to_echo){
 
 void print_jobs(){
   printf("we have %d jobs. printing now:\n", jc);
-  for(int i = 0; i < jc; i++){
-    job_t temp = jobs[i];
-    printf("[%d] %d       %s\n", jc, temp.pid, temp.command[0]);
+  for(int i = 0; i<jc; i++){
+    //job_t temp = jobs[i];
+    printf("[%d] %d       %s\n", i, jobs[i].pid, jobs[i].command);
   }
 }//end print_background_processes
 
