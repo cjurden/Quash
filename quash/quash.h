@@ -77,7 +77,7 @@ void execvp_commands(char** cmds);
 void exec_commands_bg(char** cmds);
 void add_job(struct Job* job);
 void remove_job(struct Job* job);
-
+void check_jobs();
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.
