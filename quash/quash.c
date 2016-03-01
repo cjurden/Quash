@@ -41,8 +41,8 @@ static bool running;
 static int status;
 
 //to keeep track of background and foreground processes...
-int jc = 0;
-static job_t jobs[50];
+static int jc = 0;
+static struct job_t jobs[50];
 
 
 //static char* VALID_COMMANDS[] = {"set", "echo", "cd", "pwd", "quit", "exit", "jobs"};
@@ -195,16 +195,20 @@ void parse_command(char* cmd){
       } else if (mpid == 0) {
         printf("executing child in background\n");
         printf("\nadding job!\n");
-        job_t job = (job_t){.pid = getpid(), .command=cmds[0]};
-        jobs[jc] = job;
-        jc = jc+1;
-        printf("[%d] %d\n", jc-1, jobs[jc-1].pid);
+        int jobid = jc;
         parse_command(temp);
-        printf("finished executing %d in background\n", getpid());
+        printf("[%d] %d  finished COMMAND \n", jobid, getpid());
 
       } else {
-
-
+        //parent process of mpid
+        jobs[jc].pid = mpid;
+        jobs[jc].command=cmds[0];
+        printf("[%d] %d   %s\n", jc, jobs[jc].pid, jobs[jc].command);
+        jc++;
+        if(waitpid(mpid,&status,WNOHANG) > 0)
+        {
+          printf("[%d] Done          ", getpid());
+        }
         //exit(0);
       }
 
@@ -307,7 +311,7 @@ void parse_command(char* cmd){
 
 void exec_commands_bg(char** cmds)
 {
-
+/*
   pid_t mpid = fork();
   if (mpid == -1){
     perror("fork");
@@ -331,6 +335,7 @@ void exec_commands_bg(char** cmds)
     }
     //exit(0);
   }
+  */
 }
 
 
@@ -406,9 +411,9 @@ void execute_echo(const char* path_to_echo){
 
 void print_jobs(){
   printf("we have %d jobs. printing now:\n", jc);
-  for(int i = 0; i < jc; i++){
-    job_t temp = jobs[i];
-    printf("[%d] %d       %s\n", jc, temp.pid, temp.command);
+  for(int i = 0; i<jc; i++){
+    //job_t temp = jobs[i];
+    printf("[%d] %d       %s\n", i, jobs[i].pid, jobs[i].command);
   }
 }//end print_background_processes
 

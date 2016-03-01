@@ -36,12 +36,13 @@ typedef struct command_t {
 typedef struct job_t{
   pid_t pid;
   char* command;
-} job_t;
+};
 
+/*
 typedef struct node_t {
   struct node_t *next;
   struct node_t *prev;
-  job_t *job;
+  struct job_t *job;
 } node_t;
 
 typedef struct list_t {
@@ -49,7 +50,7 @@ typedef struct list_t {
   node_t *back;
   int size;
 } list_t;
-
+*/
 /**
  * Starts the main loop by setting running flag to true.
  */
