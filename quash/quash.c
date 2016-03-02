@@ -42,6 +42,8 @@ static bool running;
 static bool opt;
 //for use with wait PID
 static int status;
+static char* HOME_ENV;
+static char* PATH_ENV;
 
 //to keeep track of background and foreground processes...
 int jc = 0;
@@ -285,10 +287,30 @@ void parse_command(char* cmd){
     }//END stdout check
 
     else if(!strcmp(cmds[0], "set")){
-        execvp(cmds[1],cmds);
+
+        char* dest = strtok(cmds[1],"=");
+        char* path = strtok(NULL,"=");
+        printf("%s\n",dest);
+        printf("%s\n",path);
+
+        if(!strcmp(dest,"HOME")){
+            strcpy(HOME_ENV, path);
+            puts(HOME_ENV);
+            //set home variable
+            set_env_variable("HOME",HOME_ENV);
+        }
+        else if(!strcmp(dest,"PATH")){
+            //set path variable
+            strcpy(PATH_ENV,path);
+            puts(PATH_ENV);
+            set_env_variable("PATH",PATH_ENV);
+        }
+        else{
+            fprintf(stderr, "no such variable to set. Error#%d\n",errno);
+        }
     }
 
-    else if(!strcmp(cmds[0], "cd")){
+        else if(!strcmp(cmds[0], "cd")){
 
         if(cmds[1] != NULL){
             //means users has passed an actual directory
@@ -313,11 +335,14 @@ void parse_command(char* cmd){
     }
 
     else if(!strcmp(cmds[0],"echo")){
-        if(!strcmp(cmds[1], "$HOME")){
-            execute_echo("$HOME");
+
+        if(strcmp(cmds[1], "$PATH") == 0){
+            //echo $PATH var
+            fprintf(stdout,"PATH: %s\n",PATH_ENV);
         }
-        else if(!strcmp(cmds[1],"$PATH")){
-            execute_echo("$PATH");
+        else if(strcmp(cmds[1], "$HOME") == 0){
+            //echo $HOME var
+            fprintf(stdout,"HOME: %s\n",HOME_ENV);
         }
         else{
             int i = 1;
@@ -327,7 +352,6 @@ void parse_command(char* cmd){
             }
             printf("\n");
         }
-        //printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
     }
 
     else if(!strcmp(cmds[0], "quit") || !strcmp(cmds[0], "exit")){
@@ -391,18 +415,6 @@ void execvp_commands(char** cmds)
 
 void execute_echo(const char* path_to_echo){
 
-    if(strcmp(path_to_echo, "$PATH") == 0){
-        //echo $PATH var
-        fprintf(stdout,"PATH: %s\n",getenv("PATH"));
-    }
-    else if(strcmp(path_to_echo, "$HOME") == 0){
-        //echo $HOME var
-        fprintf(stdout,"HOME: %s\n",getenv("HOME"));
-    }
-    else{
-        //just echo whatever was inputted
-        puts(path_to_echo);
-    }
 }
 
 void print_jobs(){
@@ -439,6 +451,10 @@ int main(int argc, char** argv) {
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
   printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
+
+  //save env variables initially
+  HOME_ENV = getenv("HOME");
+  PATH_ENV = getenv("PATH");
 
   /*
   * Check argv to see if an input file was passed to run with Quash.
