@@ -99,7 +99,7 @@ bool get_command(command_t* cmd, FILE* in) {
 
 void parse_command(char* cmd){
   bool bg = false;
-  char* outc[100], outbg[100];
+  char outc[100], outbg[100];
   strcpy(outc, cmd);
   strcpy(outbg, cmd);
 
@@ -235,19 +235,14 @@ void parse_command(char* cmd){
         if(!strcmp(cmds[i], ">")){
           ind = i;
         }
+        i++;
       }
-      pid_t pid = fork();
-
-      if(pid == 0){
         char* wrcmd = strtok(outc, ">");
         printf("%s", wrcmd);
         int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
         dup2(out, STDOUT_FILENO);
-        parse_command(wrcmd);
         close(out);
-      } else {
-          waitpid(pid, &status, 0);
-      }
+        parse_command(wrcmd);
     }//END stdout check
 
     else if(!strcmp(cmds[0], "set")){
@@ -388,7 +383,7 @@ void execvp_commands(char** cmds)
     printf("done executing %d\n", getpid());
   } else {
     waitpid(mpid, &status, 0);
-    check_jobs();
+    //check_jobs();
     //printf("back in parent process\n");
     //exit(0);
   }
