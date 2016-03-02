@@ -251,9 +251,26 @@ void parse_command(char* cmd){
     }//END stdout check
 
     else if(!strcmp(cmds[0], "set")){
-        execvp(cmds[1],cmds);
+
+        char* dest = strtok(cmds[1],"=");
+        char* path = strtok(NULL,"=");
+        printf("%s\n",dest);
+        printf("%s\n",path);
+
+
+        if(!strcmp(dest,"HOME")){
+            //set home variable
+            set_env_variable("HOME",path);
+        }
+        else if(!strcmp(dest,"PATH")){
+            //set path variable
+            set_env_variable("PATH",path);
+        }
+        else{
+            fprintf(stderr, "no such variable to set. Error#%d\n",errno);
+        }
     }
-    
+
     else if(!strcmp(cmds[0], "cd")){
 
         if(cmds[1] != NULL){
