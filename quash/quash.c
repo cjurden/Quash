@@ -174,6 +174,7 @@ void parse_command(char* cmd){
 
   else{
     //No pipe found. Continue with other checks.
+    //char* cmds = create_cmd_arr(cmd);
     char* ptr;
     char* cmds[100] = {NULL};
     char* tempCmd[100];
@@ -250,38 +251,20 @@ void parse_command(char* cmd){
     }//END stdout check
 
     else if(!strcmp(cmds[0], "set")){
-        printf("SET HERE\n");
-        //set_env_variable(cmds[1],cmds[2]);
+        execvp(cmds[1],cmds);
     }
-/*
-    else if(!strcmp(cmds[0], "echo")){
-
-      char path[100];
-      int i = 1;
-      if(cmds[i]==NULL){
-        path = "";
-      } else {
-        while(cmds[i]!=NULL)
-        {
-          char* temp = cmds[i];
-          if(cmds[i+1]!=NULL)
-          {
-            strcat(temp, " ");
-            strcat(path, temp);
-          }
-          strcat(path, temp);
-          i++;
-        }
-      }
-
-    }
-*/
+    
     else if(!strcmp(cmds[0], "cd")){
-        if(chdir(cmds[1]) < 0){
-          puts("Error. Invalid directory.");
+
+        if(cmds[1] != NULL){
+            //means users has passed an actual directory
+            if(chdir(cmds[1]) < 0){
+              puts("Error. Invalid directory.");
+            }
         }
-        else{
-          //printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
+        else {
+            //user passed only "cd." change to directory given by $HOME variable.
+            chdir(getenv("HOME"));
         }
     }
 
