@@ -103,6 +103,7 @@ void parse_command(char* cmd){
   char* outc = strdup(cmd);
   char* inc = strdup(cmd);
   strcpy(outc, cmd);
+  strcpy(inc, cmd);
   strcpy(outbg, cmd);
 
   //CHECK FOR PIPE
@@ -222,7 +223,7 @@ void parse_command(char* cmd){
 
     //Check for stdin redirection, denoted by "<".
     else if(ich!=NULL){
-      //opt = true;
+      opt = true;
       int ind = -1;
       int i = 0;
       char buffer[MAX_BUFFER];
@@ -232,27 +233,29 @@ void parse_command(char* cmd){
         }
         i++;
       }
-      char* wrcmd;
+      /*char* wrcmd;
       wrcmd = strtok(inc, "<");
       int in = open(cmds[ind+1], O_RDONLY);
-      //int size = read(in, buffer, MAX_BUFFER);
       dup2(in, STDIN_FILENO);
       close(in);
-      parse_command(wrcmd);
-      /*
+      parse_command(wrcmd);*/
+
       pid_t pid = fork();
       if (pid == -1){
         perror("fork");
         exit(EXIT_FAILURE);
       } else if (pid == 0){
+        char* wrcmd;
+        wrcmd = strtok(inc, "<");
+        printf("%s\n", wrcmd);
+        printf("%s\n", cmds[ind+1]);
         int in = open(cmds[ind+1], O_RDONLY);
-        //int size = read(in, buffer, MAX_BUFFER);
         dup2(in, STDIN_FILENO);
         close(in);
         parse_command(wrcmd);
       } else {
         waitpid(pid, &status, 0);
-      }*/
+      }
     }//END stdin check
 
     //Check for stdout redirection, denoted by ">".

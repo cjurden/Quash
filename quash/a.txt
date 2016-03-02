@@ -1,1 +1,18 @@
-       3       6      17
+Container.h
+Container.hpp
+LinkedList.h
+LinkedList.hpp
+Makefile
+README.md
+a.txt
+c.txt
+debug.h
+doc
+quash
+quash.c
+quash.doxygen
+quash.h
+quash.o
+questions.txt
+test
+test.txt
