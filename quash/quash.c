@@ -39,7 +39,7 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
-
+static bool opt;
 //for use with wait PID
 static int status;
 
@@ -99,7 +99,8 @@ bool get_command(command_t* cmd, FILE* in) {
 
 void parse_command(char* cmd){
   bool bg = false;
-  char* outc[100], outbg[100];
+  char* outbg[100];
+  char* outc = strdup(cmd);
   strcpy(outc, cmd);
   strcpy(outbg, cmd);
 
@@ -236,19 +237,31 @@ void parse_command(char* cmd){
 
     //Check for stdout redirection, denoted by ">".
     if(och!=NULL){
+      opt = true;
       int ind = -1;
       int i = 0;
       while(cmds[i]!=NULL){
         if(!strcmp(cmds[i], ">")){
           ind = i;
-          i++;
         }
+        i++;
       }
-        char* wrcmd = strtok(outc, ">");
-        int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
-        dup2(out, STDOUT_FILENO);
-        close(out);
-        parse_command(wrcmd);
+        pid_t pid = fork();
+        if(pid == -1){
+          perror("fork");
+          exit(EXIT_FAILURE);
+        } else if (pid == 0){
+          printf("output\n");
+          char* wrcmd;
+          wrcmd = strtok(outc, ">");
+          int out = open(cmds[ind+1], O_WRONLY | O_CREAT | O_APPEND);
+          dup2(out, STDOUT_FILENO);
+          close(out);
+          parse_command(wrcmd);
+        } else {
+          waitpid(pid, &status, 0);
+        }
+
     }//END stdout check
 
     else if(!strcmp(cmds[0], "set")){
@@ -313,6 +326,11 @@ void parse_command(char* cmd){
       if(bg) {
         bg = false;
           //exec_commands_bg(cmds);
+      } else if (opt){
+        opt = false;
+        if((execvp(cmds[0], cmds))<0){
+          fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
+        }
       } else {
           execvp_commands(cmds);
       }
