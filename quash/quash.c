@@ -81,7 +81,7 @@ bool get_command(command_t* cmd, FILE* in) {
     }
     else
       cmd->cmdlen = len;
-      printf("%s\n", cmd->cmdstr);
+      //printf("%s\n", cmd->cmdstr);
     return true;
   }
   else
@@ -89,7 +89,7 @@ bool get_command(command_t* cmd, FILE* in) {
 }
 
 /*
-* parse_command takes the cmdstr and acts accordingly
+* mand takes the cmdstr and acts accordingly
 * 3 cases for pipes, iniitial command that requires one std_out, middle case that requires in and out, end case that requires in
 * keep track of each of those pipes
 * can resuse arrays ,use 2 fd_1[2]s, kep track of beginning and end...
@@ -277,36 +277,43 @@ void parse_command(char* cmd){
     }
 */
     else if(!strcmp(cmds[0], "cd")){
-        printf("CHANGE DIRECTORY HERE");
-        if((execvp(cmds[0], cmd[0]) < 0)){
-            fprintf(stderr, "Error while executing %s. Error #%d.\n",cmds[0],errno);
+        if(chdir(cmds[1]) < 0){
+          puts("Error. Invalid directory.");
+        }
+        else{
+          //printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
         }
     }
 
-      /*char path[100];
-      //int i = 1;
-      //printf("in cd, second argument: %s\n", cmds[1]);
-      //if(cmds[i]==NULL){
-        //sprintf(path, "%s", getenv("HOME"));
-        //change_directory(path);
-      } else {
-        change_directory(cmds[1]);
-    }*/
-
     else if(!strcmp(cmds[0], "pwd")){
-      if(cmds[1]==NULL){
-        print_working_directory();
-      }
-      else{
-        execvp_commands(cmds);
-      }
+        char cwd[MAX_BUFFER];
+        if(getcwd(cwd, sizeof(cwd)) != NULL){
+          fprintf(stdout, "\n%s\n", cwd);
+        }
+        else{
+          perror("getcwd() error");
+        }
     }
 
-    else if(!strcmp(cmds[0], "quit")){
-      terminate();
+    else if(!strcmp(cmds[0],"echo")){
+        if(!strcmp(cmds[1], "$HOME")){
+            execute_echo("$HOME");
+        }
+        else if(!strcmp(cmds[1],"$PATH")){
+            execute_echo("$PATH");
+        }
+        else{
+            int i = 1;
+            while(cmds[i] != NULL){
+                printf("%s ",cmds[i]);
+                i++;
+            }
+            printf("\n");
+        }
+        //printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
     }
 
-    else if(!strcmp(cmds[0], "exit")){
+    else if(!strcmp(cmds[0], "quit") || !strcmp(cmds[0], "exit")){
       terminate();
     }
 
@@ -378,32 +385,12 @@ void execvp_commands(char** cmds)
     if((execvp(cmds[0], cmds))<0){
       fprintf(stderr, "\nError executing %s. ERROR#%d\n", cmds[0], errno);
     }
-    printf("done executing %d", getpid());
+    printf("done executing %d\n", getpid());
   } else {
     waitpid(mpid, &status, 0);
     check_jobs();
     //printf("back in parent process\n");
     //exit(0);
-  }
-}
-
-//-------------EXECUTION METHODS ------------------//
-void change_directory(const char* path) {
-  if(chdir(path) < 0){
-    puts("Error. Invalid directory.");
-  }
-  else{
-    fprintf(stdout, "Successfully changed to %s\n",path );
-  }
-}
-
-void print_working_directory(){
-  char cwd[MAX_BUFFER];
-  if(getcwd(cwd, sizeof(cwd)) != NULL){
-    fprintf(stdout, "Current working directory: %s\n", cwd);
-  }
-  else{
-    perror("getcwd() error");
   }
 }
 
@@ -456,6 +443,7 @@ int main(int argc, char** argv) {
 
   puts("Welcome to Quash!");
   puts("Type \"exit\" to quit");
+  printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
 
   /*
   * Check argv to see if an input file was passed to run with Quash.
@@ -486,13 +474,12 @@ int main(int argc, char** argv) {
    }//end input file checks
    else{
        //Display intial prompt
-       printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
    }
 
   while (is_running() && get_command(&cmd, stdin)) {
     //print prompt to user
-    printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
     parse_command(cmd.cmdstr);
+    printf("\033[1;36m %s>\033[0m", getcwd(NULL, 0));
    }
 
   return EXIT_SUCCESS;
