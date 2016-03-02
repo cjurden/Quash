@@ -1,17 +1,1 @@
-Container.h
-Container.hpp
-LinkedList.h
-LinkedList.hpp
-Makefile
-README.md
-a.txt
-b.txt
-debug.h
-doc
-quash
-quash.c
-quash.doxygen
-quash.h
-quash.o
-questions.txt
-test.txt
+       3       6      17
