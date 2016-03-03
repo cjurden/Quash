@@ -33,24 +33,14 @@ typedef struct command_t {
   // Extend with more fields if needed
 } command_t;
 
+/*
+ * Holds information about a job (process run in the background)
+ */
 typedef struct job_t{
   pid_t pid;
   char* command;
-};
+} job_t;
 
-/*
-typedef struct node_t {
-  struct node_t *next;
-  struct node_t *prev;
-  struct job_t *job;
-} node_t;
-
-typedef struct list_t {
-  node_t *front;
-  node_t *back;
-  int size;
-} list_t;
-*/
 /**
  * Starts the main loop by setting running flag to true.
  */
@@ -79,18 +69,30 @@ void terminate();
  */
 bool get_command(command_t* cmd, FILE* in);
 
+/**
+ *  take in command string from main and run conditional checks to act accordingly.
+ *
+ *  @param cmd - command string from command structure.
+ *  @return void
+ */
 void parse_command(char* cmd);
-void exec_command(char* cmdbuf);
-void store_commands_before_pipe(char** cmdbuf, int piploc);
-void exec_command_with_pipe(char* first, char* second);
-int check_for_pipe(char* cmdbuf);
-bool in_cmd_set(char* input);
-void join(char** cmdbuf, char* buf);
+
+/**
+ *  take in command array from parse_command and run execvp
+ *
+ *  @param cmds - command array from parse_command
+ *  @return void
+ */
 void execvp_commands(char** cmds);
-void exec_commands_bg(char** cmds);
-void add_job(struct Job* job);
-void remove_job(struct Job* job);
+
+/**
+ *  check current job array using waitpid, print and remove completed jobs
+ *
+ *  @param null
+ *  @return void
+ */
 void check_jobs();
+
 /**
  * Change the working directory to the path specified.
  * Uses the UNIX cwd() command.
